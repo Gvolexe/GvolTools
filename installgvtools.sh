@@ -7,7 +7,8 @@
 set -euo pipefail
 
 readonly VERSION="0.2.0"
-readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly ROOT_DIR
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Colors
@@ -104,12 +105,10 @@ EOF
 
 detect_platform() {
     if [[ -r /etc/os-release ]]; then
-        # shellcheck disable=SC1091
-        source /etc/os-release
-        local id="${ID:-}"
-        local like="${ID_LIKE:-}"
-        id="${id,,}"  # lowercase
-        like="${like,,}"
+        # Read os-release without sourcing (avoids conflicts with our VERSION)
+        local id like
+        id=$(grep -E '^ID=' /etc/os-release | cut -d= -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]')
+        like=$(grep -E '^ID_LIKE=' /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]' || echo "")
 
         if [[ "$id" == "arch" || "$id" == "cachyos" || "$like" == *"arch"* ]]; then
             echo "arch"
@@ -201,7 +200,7 @@ PY
         sudo apt-get install -y $deps
     else
         msg_warn "Unknown platform '$platform' - install manually:"
-        echo "$deps" | sed 's/^/  /'
+        echo "  ${deps// /\n  }"
     fi
     
     msg_success "Dependencies installed"
@@ -379,7 +378,6 @@ do_status() {
     echo "  ${DIM}Description:${RESET} $description"
     echo
     
-    local all_ok=true
     while IFS='|' read -r status type path; do
         case "$status" in
             ok)
@@ -387,7 +385,6 @@ do_status() {
                 ;;
             missing)
                 echo "  ${RED}✖${RESET} $path ${DIM}(not found)${RESET}"
-                all_ok=false
                 ;;
             result)
                 echo
