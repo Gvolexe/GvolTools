@@ -228,11 +228,69 @@ class TestRemoteScripts:
         assert "authorized_keys" in script
         assert "chmod 600" in script
     
-    def test_create_user_script_contains_username(self):
-        script = km.make_create_user_script("dGVzdGtleQ==", "myuser")
+    def test_simple_user_script_contains_username(self):
+        script = km.make_simple_user_script("dGVzdGtleQ==", "myuser")
         assert "myuser" in script
         assert "useradd" in script
         assert "authorized_keys" in script
+    
+    def test_secure_user_script_contains_security_features(self):
+        script = km.make_secure_user_script(
+            "dGVzdGtleQ==", 
+            "myuser",
+            disable_password=True,
+            disable_root_login=True,
+            setup_sudo_key=True,
+        )
+        assert "myuser" in script
+        assert "useradd" in script
+        assert "passwd -l" in script  # disable password
+        assert "PermitRootLogin no" in script  # disable root
+        assert "pam_ssh_agent_auth" in script  # sudo with key
+        assert "sudo_authorized_keys" in script
+    
+    def test_secure_user_script_without_security(self):
+        script = km.make_secure_user_script(
+            "dGVzdGtleQ==", 
+            "myuser",
+            disable_password=False,
+            disable_root_login=False,
+            setup_sudo_key=False,
+        )
+        assert "myuser" in script
+        assert "useradd" in script
+        assert "passwd -l" not in script
+        assert "PermitRootLogin" not in script
+        assert "pam_ssh_agent_auth" not in script
+
+
+class TestPreferences:
+    """Test preferences loading and saving."""
+    
+    def test_load_nonexistent_prefs_returns_defaults(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch.object(km.Preferences, "path", return_value=Path(tmpdir) / "prefs.json"):
+                prefs = km.Preferences.load()
+                assert prefs.default_user == ""
+                assert prefs.default_key == ""
+                assert prefs.sudo_with_key is True
+                assert prefs.disable_root_login is True
+    
+    def test_save_and_load_prefs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            prefs_path = Path(tmpdir) / "prefs.json"
+            with patch.object(km.Preferences, "path", return_value=prefs_path):
+                prefs = km.Preferences(
+                    default_user="myuser",
+                    default_key="mykey",
+                    strict_hostkey=True,
+                )
+                prefs.save()
+                
+                loaded = km.Preferences.load()
+                assert loaded.default_user == "myuser"
+                assert loaded.default_key == "mykey"
+                assert loaded.strict_hostkey is True
 
 
 class TestCLI:
@@ -252,12 +310,34 @@ class TestCLI:
         assert args.command == "keyconf"
         assert args.keyconf_action == "list"
     
+    def test_parser_accepts_keyconf_prefs(self):
+        parser = km.build_parser("gvolkeymanager")
+        args = parser.parse_args(["keyconf", "prefs"])
+        assert args.command == "keyconf"
+        assert args.keyconf_action == "prefs"
+    
+    def test_parser_accepts_keyconf_prefs_set(self):
+        parser = km.build_parser("gvolkeymanager")
+        args = parser.parse_args(["keyconf", "prefs", "set", "default_user", "myuser"])
+        assert args.command == "keyconf"
+        assert args.keyconf_action == "prefs"
+        assert args.prefs_action == "set"
+        assert args.key == "default_user"
+        assert args.value == "myuser"
+    
     def test_parser_accepts_keyup(self):
         parser = km.build_parser("gvolkeymanager")
         args = parser.parse_args(["keyup", "user@host", "mykey"])
         assert args.command == "keyup"
         assert args.target == "user@host"
         assert args.keyname == "mykey"
+    
+    def test_parser_accepts_keyup_without_keyname(self):
+        parser = km.build_parser("gvolkeymanager")
+        args = parser.parse_args(["keyup", "user@host"])
+        assert args.command == "keyup"
+        assert args.target == "user@host"
+        assert args.keyname == ""
     
     def test_parser_accepts_keyup_options(self):
         parser = km.build_parser("gvolkeymanager")

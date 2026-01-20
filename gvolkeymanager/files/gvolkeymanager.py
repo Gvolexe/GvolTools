@@ -4,7 +4,7 @@ gvolkeymanager - SSH key upload and registry utility
 
 Provides two main commands:
   - keyup: Upload SSH public keys to remote servers
-  - keyconf: Manage local registry of allowed keys
+  - keyconf: Manage local registry of allowed keys and preferences
 
 Author: Gvol (gvol@nexusystems.org)
 """
@@ -25,7 +25,7 @@ try:
 except ImportError:
     paramiko = None
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Terminal Colors
@@ -138,6 +138,14 @@ class Output:
     def keyvalue(key: str, value: str, indent: int = 2) -> None:
         prefix = " " * indent
         print(f"{prefix}{c(key + ':', Colors.DIM)} {value}")
+    
+    @staticmethod
+    def option(num: str, text: str, desc: str = "") -> None:
+        """Print a menu option."""
+        opt = f"    {c(num + ')', Colors.CYAN, Colors.BOLD)} {text}"
+        if desc:
+            opt += f" {c(desc, Colors.DIM)}"
+        print(opt)
 
 
 def die(msg: str, code: int = 1) -> None:
@@ -153,6 +161,7 @@ def die(msg: str, code: int = 1) -> None:
 XDG_CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
 LEGACY_CONFIG = XDG_CONFIG_HOME / "keyup" / "keys.json"
 DEFAULT_CONFIG = XDG_CONFIG_HOME / "gvolkeymanager" / "keys.json"
+PREFS_CONFIG = XDG_CONFIG_HOME / "gvolkeymanager" / "prefs.json"
 
 KEY_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,63}$")
 SSH_KEY_PREFIXES = ("ssh-", "ecdsa-", "sk-ssh-", "sk-ecdsa-")
@@ -162,8 +171,58 @@ DEFAULT_CREATE_USER = "gvol"
 
 
 @dataclass
+class Preferences:
+    """User preferences for keyup defaults."""
+    default_user: str = ""
+    default_key: str = ""
+    strict_hostkey: bool = False
+    sudo_with_key: bool = True
+    disable_root_login: bool = True
+    disable_password_auth: bool = True
+    
+    @classmethod
+    def path(cls) -> Path:
+        return PREFS_CONFIG
+    
+    @classmethod
+    def load(cls) -> "Preferences":
+        """Load preferences from file."""
+        if not cls.path().exists():
+            return cls()
+        
+        try:
+            data = json.loads(cls.path().read_text(encoding="utf-8"))
+            return cls(
+                default_user=data.get("default_user", ""),
+                default_key=data.get("default_key", ""),
+                strict_hostkey=data.get("strict_hostkey", False),
+                sudo_with_key=data.get("sudo_with_key", True),
+                disable_root_login=data.get("disable_root_login", True),
+                disable_password_auth=data.get("disable_password_auth", True),
+            )
+        except (json.JSONDecodeError, OSError):
+            return cls()
+    
+    def save(self) -> None:
+        """Save preferences to file."""
+        self.path().parent.mkdir(parents=True, exist_ok=True)
+        data = {
+            "default_user": self.default_user,
+            "default_key": self.default_key,
+            "strict_hostkey": self.strict_hostkey,
+            "sudo_with_key": self.sudo_with_key,
+            "disable_root_login": self.disable_root_login,
+            "disable_password_auth": self.disable_password_auth,
+        }
+        self.path().write_text(
+            json.dumps(data, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8"
+        )
+
+
+@dataclass
 class Config:
-    """Application configuration."""
+    """Application configuration for key registry."""
     keys: dict
     path: Path
     
@@ -352,8 +411,158 @@ echo "OK: key installed for $(whoami) on $(hostname)"
 """
 
 
-def make_create_user_script(pubkey_b64: str, username: str) -> str:
-    """Generate script to create user and upload key."""
+def make_secure_user_script(
+    pubkey_b64: str,
+    username: str,
+    disable_password: bool = True,
+    disable_root_login: bool = True,
+    setup_sudo_key: bool = True,
+) -> str:
+    """Generate comprehensive secure user setup script.
+    
+    This script:
+    1. Creates user if not exists
+    2. Installs SSH key
+    3. Disables password login for user (optional)
+    4. Disables root SSH login (optional)
+    5. Sets up pam_ssh_agent_auth for sudo (optional)
+    """
+    
+    disable_password_cmd = ""
+    if disable_password:
+        disable_password_cmd = """
+# Disable password authentication for user
+passwd -l "$TARGET_USER" 2>/dev/null || true
+echo "OK: disabled password login for $TARGET_USER"
+"""
+    
+    disable_root_cmd = ""
+    if disable_root_login:
+        disable_root_cmd = """
+# Disable root SSH login
+SSHD_CONFIG="/etc/ssh/sshd_config"
+if [ -f "$SSHD_CONFIG" ]; then
+    # Backup config
+    cp "$SSHD_CONFIG" "${SSHD_CONFIG}.bak.$(date +%Y%m%d%H%M%S)"
+    
+    # Disable root login
+    if grep -qE "^#?PermitRootLogin" "$SSHD_CONFIG"; then
+        sed -i 's/^#\\?PermitRootLogin.*/PermitRootLogin no/' "$SSHD_CONFIG"
+    else
+        echo "PermitRootLogin no" >> "$SSHD_CONFIG"
+    fi
+    
+    # Reload SSH
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl reload sshd 2>/dev/null || systemctl reload ssh 2>/dev/null || true
+    elif command -v service >/dev/null 2>&1; then
+        service sshd reload 2>/dev/null || service ssh reload 2>/dev/null || true
+    fi
+    echo "OK: disabled root SSH login"
+fi
+"""
+    
+    setup_sudo_key_cmd = ""
+    if setup_sudo_key:
+        setup_sudo_key_cmd = """
+# Install libpam-ssh-agent-auth if not present (Debian/Ubuntu)
+if command -v apt-get >/dev/null 2>&1; then
+    if ! dpkg -l libpam-ssh-agent-auth 2>/dev/null | grep -q "^ii"; then
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -qq
+        apt-get install -y -qq libpam-ssh-agent-auth >/dev/null 2>&1 || true
+    fi
+fi
+
+# Arch Linux
+if command -v pacman >/dev/null 2>&1; then
+    if ! pacman -Q pam_ssh_agent_auth 2>/dev/null; then
+        pacman -S --noconfirm pam_ssh_agent_auth 2>/dev/null || true
+    fi
+fi
+
+# Set up sudo authorized keys directory
+SUDO_AUTH_DIR="/etc/security/sudo_authorized_keys"
+install -d -m 0755 "$SUDO_AUTH_DIR"
+
+# Create per-user sudo key file
+SUDO_KEY_FILE="$SUDO_AUTH_DIR/$TARGET_USER"
+install -m 0644 -o root -g root /dev/null "$SUDO_KEY_FILE"
+echo "$KEY" > "$SUDO_KEY_FILE"
+echo "OK: installed sudo key for $TARGET_USER"
+
+# Configure PAM for sudo
+PAM_SUDO="/etc/pam.d/sudo"
+PAM_LINE="auth sufficient pam_ssh_agent_auth.so file=/etc/security/sudo_authorized_keys/%u"
+
+if [ -f "$PAM_SUDO" ]; then
+    if ! grep -qF "pam_ssh_agent_auth" "$PAM_SUDO"; then
+        # Add PAM line before @include common-auth
+        if grep -q "@include common-auth" "$PAM_SUDO"; then
+            sed -i "/@include common-auth/i $PAM_LINE" "$PAM_SUDO"
+        else
+            # Add at the beginning after any initial comments
+            sed -i "1a $PAM_LINE" "$PAM_SUDO"
+        fi
+        echo "OK: configured PAM for sudo key auth"
+    fi
+fi
+
+# Ensure SSH_AUTH_SOCK is preserved by sudo
+SUDOERS_DROP="/etc/sudoers.d/ssh_auth_sock"
+if [ ! -f "$SUDOERS_DROP" ]; then
+    echo 'Defaults env_keep += "SSH_AUTH_SOCK"' > "$SUDOERS_DROP"
+    chmod 440 "$SUDOERS_DROP"
+    echo "OK: configured sudo to preserve SSH_AUTH_SOCK"
+fi
+"""
+    
+    return f"""
+set -e
+
+KEY_B64={shlex.quote(pubkey_b64)}
+KEY="$(printf '%s' "$KEY_B64" | base64 -d)"
+TARGET_USER={shlex.quote(username)}
+
+# Create user if not exists
+if ! id -u "$TARGET_USER" >/dev/null 2>&1; then
+    useradd -m -s /bin/bash "$TARGET_USER"
+    echo "OK: created user $TARGET_USER"
+else
+    echo "OK: user $TARGET_USER already exists"
+fi
+
+# Get home directory
+HOME_DIR="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
+[ -n "$HOME_DIR" ] || {{ echo "ERROR: could not resolve home dir for $TARGET_USER" >&2; exit 2; }}
+
+# Install SSH key
+install -d -m 700 -o "$TARGET_USER" -g "$TARGET_USER" "$HOME_DIR/.ssh"
+AUTH="$HOME_DIR/.ssh/authorized_keys"
+touch "$AUTH"
+chmod 600 "$AUTH"
+chown "$TARGET_USER":"$TARGET_USER" "$AUTH"
+grep -qxF "$KEY" "$AUTH" || echo "$KEY" >> "$AUTH"
+echo "OK: installed SSH key for $TARGET_USER"
+
+# Add to sudo group
+if getent group sudo >/dev/null 2>&1; then
+    usermod -aG sudo "$TARGET_USER" 2>/dev/null || true
+    echo "OK: added $TARGET_USER to sudo group"
+elif getent group wheel >/dev/null 2>&1; then
+    usermod -aG wheel "$TARGET_USER" 2>/dev/null || true
+    echo "OK: added $TARGET_USER to wheel group"
+fi
+{disable_password_cmd}
+{disable_root_cmd}
+{setup_sudo_key_cmd}
+echo ""
+echo "DONE: secure user setup complete for $TARGET_USER on $(hostname)"
+"""
+
+
+def make_simple_user_script(pubkey_b64: str, username: str) -> str:
+    """Generate simple script to create user and upload key (no security hardening)."""
     return f"""
 KEY_B64={shlex.quote(pubkey_b64)}
 KEY="$(printf '%s' "$KEY_B64" | base64 -d)"
@@ -482,6 +691,54 @@ def cmd_keyconf_show(name: str) -> None:
     print()
 
 
+def cmd_keyconf_prefs_show() -> None:
+    """Show current preferences."""
+    prefs = Preferences.load()
+    
+    Output.header("Preferences")
+    print()
+    
+    Output.keyvalue("Default user", prefs.default_user or c("(not set)", Colors.DIM))
+    Output.keyvalue("Default key", prefs.default_key or c("(not set)", Colors.DIM))
+    Output.keyvalue("Strict host key", c("yes", Colors.GREEN) if prefs.strict_hostkey else c("no", Colors.YELLOW))
+    
+    print()
+    Output.info("Security defaults (when creating users):")
+    Output.keyvalue("Sudo with SSH key", c("yes", Colors.GREEN) if prefs.sudo_with_key else c("no", Colors.YELLOW), indent=4)
+    Output.keyvalue("Disable root login", c("yes", Colors.GREEN) if prefs.disable_root_login else c("no", Colors.YELLOW), indent=4)
+    Output.keyvalue("Disable password auth", c("yes", Colors.GREEN) if prefs.disable_password_auth else c("no", Colors.YELLOW), indent=4)
+    
+    print()
+    Output.step(f"Config: {c(str(Preferences.path()), Colors.DIM)}")
+    print()
+
+
+def cmd_keyconf_prefs_set(key: str, value: str) -> None:
+    """Set a preference value."""
+    prefs = Preferences.load()
+    
+    key_lower = key.lower().replace("-", "_")
+    
+    bool_keys = {"strict_hostkey", "sudo_with_key", "disable_root_login", "disable_password_auth"}
+    str_keys = {"default_user", "default_key"}
+    
+    if key_lower in bool_keys:
+        if value.lower() in {"true", "yes", "1", "on"}:
+            setattr(prefs, key_lower, True)
+        elif value.lower() in {"false", "no", "0", "off"}:
+            setattr(prefs, key_lower, False)
+        else:
+            die(f"invalid boolean value '{value}' - use yes/no, true/false, or 1/0")
+    elif key_lower in str_keys:
+        setattr(prefs, key_lower, value)
+    else:
+        valid_keys = ", ".join(sorted(bool_keys | str_keys))
+        die(f"unknown preference '{key}'\n  Valid keys: {valid_keys}")
+    
+    prefs.save()
+    Output.success(f"set {c(key_lower, Colors.CYAN)} = {c(value, Colors.MAGENTA)}")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Commands: keyup
 # ─────────────────────────────────────────────────────────────────────────────
@@ -491,10 +748,18 @@ def cmd_keyup(
     keyname: str,
     strict_hostkey: bool = False,
     create_user: str = "",
-    dry_run: bool = False
+    dry_run: bool = False,
 ) -> None:
     """Upload SSH key to remote server."""
     cfg = Config.load()
+    prefs = Preferences.load()
+    
+    # Use preferences as defaults
+    if not keyname and prefs.default_key:
+        keyname = prefs.default_key
+    
+    if not keyname:
+        die("no key specified and no default key configured\n  Set default: keyconf prefs set default_key <name>")
     
     if keyname not in cfg.keys:
         die(
@@ -510,6 +775,10 @@ def cmd_keyup(
     pubkey_b64 = base64.b64encode(pubkey.encode("utf-8")).decode("ascii")
     
     target = Target.parse(target_str)
+    
+    # Apply preference for strict_hostkey if not overridden
+    if prefs.strict_hostkey and not strict_hostkey:
+        strict_hostkey = True
     
     Output.header("Key Upload")
     print()
@@ -534,35 +803,60 @@ def cmd_keyup(
     Output.divider()
     Output.info("choose upload option:")
     print()
-    print(f"    {c('1)', Colors.CYAN, Colors.BOLD)} Create user '{c(create_user or DEFAULT_CREATE_USER, Colors.MAGENTA)}' and upload key")
-    print(f"    {c('2)', Colors.CYAN, Colors.BOLD)} Upload key to '{c(target.user, Colors.MAGENTA)}'")
     
-    choice = input(f"\n  {c('Option', Colors.DIM)} [{c('1', Colors.CYAN)}/{c('2', Colors.CYAN)}]: ").strip()
+    user_to_create = create_user or prefs.default_user or DEFAULT_CREATE_USER
     
-    if choice not in {"1", "2"}:
-        die("invalid option - must be 1 or 2")
+    Output.option("1", f"Secure setup: create '{c(user_to_create, Colors.MAGENTA)}'", "(recommended)")
+    print(f"       {c('└─ disable root, password auth, sudo with key', Colors.DIM)}")
+    Output.option("2", f"Simple setup: create '{c(user_to_create, Colors.MAGENTA)}'")
+    print(f"       {c('└─ just add user and key', Colors.DIM)}")
+    Output.option("3", f"Upload key to '{c(target.user, Colors.MAGENTA)}' only")
+    
+    choice = input(f"\n  {c('Option', Colors.DIM)} [{c('1', Colors.CYAN)}/{c('2', Colors.CYAN)}/{c('3', Colors.CYAN)}]: ").strip()
+    
+    if choice not in {"1", "2", "3"}:
+        die("invalid option - must be 1, 2, or 3")
     
     print()
     Output.divider()
     client = connect_ssh(target, password, strict_hostkey)
     
     try:
-        if choice == "2":
+        if choice == "3":
             Output.info(f"uploading key to {c(target.user, Colors.CYAN)}...")
             script = make_upload_script(pubkey_b64)
             rc, out, err = exec_remote(client, script)
-        else:
-            user = create_user or DEFAULT_CREATE_USER
-            Output.info(f"creating user '{c(user, Colors.CYAN)}' and uploading key...")
-            script = make_create_user_script(pubkey_b64, user)
+        elif choice == "2":
+            Output.info(f"creating user '{c(user_to_create, Colors.CYAN)}' (simple mode)...")
+            script = make_simple_user_script(pubkey_b64, user_to_create)
+            needs_sudo = target.user != "root"
+            rc, out, err = exec_remote(client, script, sudo=needs_sudo, password=password)
+        else:  # choice == "1" - secure setup
+            Output.info(f"secure setup for '{c(user_to_create, Colors.CYAN)}'...")
+            print()
+            script = make_secure_user_script(
+                pubkey_b64,
+                user_to_create,
+                disable_password=prefs.disable_password_auth,
+                disable_root_login=prefs.disable_root_login,
+                setup_sudo_key=prefs.sudo_with_key,
+            )
             needs_sudo = target.user != "root"
             rc, out, err = exec_remote(client, script, sudo=needs_sudo, password=password)
         
         print()
         if out.strip():
             for line in out.strip().split("\n"):
+                line = line.strip()
+                if not line:
+                    continue
                 if line.startswith("OK:"):
                     Output.success(line[3:].strip())
+                elif line.startswith("DONE:"):
+                    print()
+                    Output.success(c(line[5:].strip(), Colors.BOLD))
+                elif line.startswith("ERROR:"):
+                    Output.error(line[6:].strip())
                 else:
                     Output.step(line)
         
@@ -576,6 +870,15 @@ def cmd_keyup(
             for line in err.strip().split("\n"):
                 if line and not line.startswith("[sudo]"):
                     Output.warn(line)
+        
+        if choice == "1":
+            print()
+            Output.divider()
+            Output.info("next steps:")
+            print()
+            Output.step(f"SSH: {c(f'ssh {user_to_create}@{target.host}', Colors.CYAN)}")
+            Output.step(f"Sudo will use your SSH key (requires agent forwarding: {c('ssh -A', Colors.CYAN)})")
+            print()
     
     finally:
         client.close()
@@ -596,6 +899,8 @@ def build_parser(prog: str) -> argparse.ArgumentParser:
 Examples:
   keyconf add mykey ~/.ssh/id_ed25519.pub
   keyconf list
+  keyconf prefs                           # show preferences
+  keyconf prefs set default_user gvol     # set default username
   keyup user@host mykey
   keyup --strict-hostkey admin@server:2222 mykey
 """
@@ -634,6 +939,16 @@ Examples:
     p_show = keyconf_sub.add_parser("show", help="show key details")
     p_show.add_argument("name", help="name of the key")
     
+    # Preferences subcommand
+    p_prefs = keyconf_sub.add_parser("prefs", help="manage preferences")
+    prefs_sub = p_prefs.add_subparsers(dest="prefs_action", metavar="<action>")
+    
+    prefs_sub.add_parser("show", help="show current preferences")
+    
+    p_prefs_set = prefs_sub.add_parser("set", help="set a preference")
+    p_prefs_set.add_argument("key", help="preference key")
+    p_prefs_set.add_argument("value", help="preference value")
+    
     # keyup subcommand
     p_keyup = sub.add_parser(
         "keyup",
@@ -641,17 +956,17 @@ Examples:
         description="Upload an SSH public key to a remote server"
     )
     p_keyup.add_argument("target", help="user@host or user@host:port")
-    p_keyup.add_argument("keyname", help="registered key name")
+    p_keyup.add_argument("keyname", nargs="?", default="", help="registered key name (or use default)")
     p_keyup.add_argument(
         "--strict-hostkey",
         action="store_true",
         help="reject unknown host keys (recommended for production)"
     )
     p_keyup.add_argument(
-        "--create-user",
+        "--create-user", "-u",
         metavar="USER",
         default="",
-        help=f"custom username to create (default: {DEFAULT_CREATE_USER})"
+        help=f"custom username to create (default: from prefs or {DEFAULT_CREATE_USER})"
     )
     p_keyup.add_argument(
         "--dry-run", "-n",
@@ -666,6 +981,11 @@ def main() -> None:
     """Main entry point."""
     prog = Path(sys.argv[0]).name
     argv = sys.argv[1:]
+    
+    # Handle --version / -V before subcommand injection
+    if argv and argv[0] in ("--version", "-V"):
+        print(f"{prog} {__version__}")
+        return
     
     # Handle symlink invocations
     if prog == "keyconf":
@@ -687,6 +1007,11 @@ def main() -> None:
             cmd_keyconf_list()
         elif args.keyconf_action == "show":
             cmd_keyconf_show(args.name)
+        elif args.keyconf_action == "prefs":
+            if getattr(args, "prefs_action", None) == "set":
+                cmd_keyconf_prefs_set(args.key, args.value)
+            else:
+                cmd_keyconf_prefs_show()
         else:
             parser.parse_args(["keyconf", "--help"])
     
@@ -696,7 +1021,7 @@ def main() -> None:
             args.keyname,
             strict_hostkey=args.strict_hostkey,
             create_user=args.create_user,
-            dry_run=args.dry_run
+            dry_run=args.dry_run,
         )
     
     else:
