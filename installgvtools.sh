@@ -299,7 +299,19 @@ PY
     
     echo
     msg_success "Installation complete"
-    msg_info "Run ${CYAN}hash -r${RESET} to refresh your shell"
+    
+    # Check if ~/.local/bin is in PATH
+    if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+        echo
+        msg_warn "~/.local/bin is not in your PATH"
+        echo "  Add this line to your shell config (~/.bashrc, ~/.zshrc, etc.):"
+        echo
+        echo "    ${CYAN}export PATH=\"\$HOME/.local/bin:\$PATH\"${RESET}"
+        echo
+        echo "  Then restart your shell or run: ${CYAN}source ~/.bashrc${RESET}"
+    else
+        msg_info "Run ${CYAN}hash -r${RESET} to refresh your shell"
+    fi
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
