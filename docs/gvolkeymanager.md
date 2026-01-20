@@ -77,14 +77,14 @@ keyconf prefs set sudo_with_key yes
 
 #### Available Preferences
 
-| Key                    | Type    | Default | Description                                    |
-| ---------------------- | ------- | ------- | ---------------------------------------------- |
-| `default_user`         | string  | `""`    | Default username when creating users           |
-| `default_key`          | string  | `""`    | Default key name (allows `keyup host` shortcut)|
-| `strict_hostkey`       | boolean | `false` | Reject unknown SSH host keys                   |
-| `sudo_with_key`        | boolean | `true`  | Set up sudo authentication via SSH key         |
-| `disable_root_login`   | boolean | `true`  | Disable SSH login as root                      |
-| `disable_password_auth`| boolean | `true`  | Disable password login for created users       |
+| Key                     | Type    | Default | Description                                     |
+| ----------------------- | ------- | ------- | ----------------------------------------------- |
+| `default_user`          | string  | `""`    | Default username when creating users            |
+| `default_key`           | string  | `""`    | Default key name (allows `keyup host` shortcut) |
+| `strict_hostkey`        | boolean | `false` | Reject unknown SSH host keys                    |
+| `sudo_with_key`         | boolean | `true`  | Set up sudo authentication via SSH key          |
+| `disable_root_login`    | boolean | `true`  | Disable SSH login as root                       |
+| `disable_password_auth` | boolean | `true`  | Disable password login for created users        |
 
 ### keyup — Upload Keys to Remote Servers
 

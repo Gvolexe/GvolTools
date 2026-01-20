@@ -2,10 +2,19 @@
 
 [![CI](https://github.com/Gvolexe/GvolTools/actions/workflows/ci.yml/badge.svg)](https://github.com/Gvolexe/GvolTools/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-0.3.0-green.svg)](https://github.com/Gvolexe/GvolTools/releases)
 
 A collection of small, focused utilities with a consistent structure and JSON-driven installer.
 
 **Author:** Gvol ([gvol@nexusystems.org](mailto:gvol@nexusystems.org))
+
+## Features
+
+- 🔐 **Secure server setup** — Disable root login, password auth, configure sudo via SSH key
+- 🔑 **SSH key management** — Registry system for managing multiple keys
+- ⚙️ **Preferences** — Save defaults so you don't have to repeat arguments
+- 🎨 **Beautiful CLI** — Colorful, informative output with clear status messages
+- 📦 **JSON-driven installer** — Easy to extend with new tools
 
 ---
 
@@ -44,9 +53,16 @@ After editing, restart your shell or run `source ~/.bashrc` (or equivalent).
 
 ## Available Tools
 
-| Tool                                     | Description                               |
-| ---------------------------------------- | ----------------------------------------- |
-| [gvolkeymanager](docs/gvolkeymanager.md) | SSH key upload & registry (keyup/keyconf) |
+| Tool                                     | Version | Description                                           |
+| ---------------------------------------- | ------- | ----------------------------------------------------- |
+| [gvolkeymanager](docs/gvolkeymanager.md) | 0.3.0   | SSH key upload, registry & secure server setup        |
+
+### gvolkeymanager Highlights
+
+- **`keyup`** — Upload SSH keys to servers with optional security hardening
+- **`keyconf`** — Manage local registry of SSH keys and preferences
+- **Secure setup** — Creates users, disables root login, enables sudo via SSH key
+- **Preferences** — Save default username, key, and security settings
 
 ## Installer Usage
 
@@ -103,8 +119,7 @@ Commands:
 
 ## Documentation
 
-- [Overview & Architecture](docs/OVERVIEW.md)
-- [gvolkeymanager](docs/gvolkeymanager.md)
+- [gvolkeymanager](docs/gvolkeymanager.md) — Full usage guide with security features
 
 ## Development
 
