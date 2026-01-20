@@ -23,16 +23,19 @@ cd GvolTools
 Tools are installed to `~/.local/bin`. Add this directory to your PATH:
 
 **Bash** (`~/.bashrc`):
+
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
 **Zsh** (`~/.zshrc`):
+
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
 **Fish** (`~/.config/fish/config.fish`):
+
 ```fish
 fish_add_path ~/.local/bin
 ```
