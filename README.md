@@ -1,6 +1,6 @@
 # gvoltools
 
-[![CI](https://github.com/Gvolexe/gvoltools/actions/workflows/ci.yml/badge.svg)](https://github.com/Gvolexe/gvoltools/actions/workflows/ci.yml)
+[![CI](https://github.com/Gvolexe/GvolTools/actions/workflows/ci.yml/badge.svg)](https://github.com/Gvolexe/GvolTools/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A collection of small, focused utilities with a consistent structure and JSON-driven installer.
@@ -12,8 +12,8 @@ A collection of small, focused utilities with a consistent structure and JSON-dr
 ## Quick Start
 
 ```bash
-git clone https://github.com/Gvolexe/gvoltools.git
-cd gvoltools
+git clone https://github.com/Gvolexe/GvolTools.git
+cd GvolTools
 ./installgvtools.sh list
 ./installgvtools.sh install gvolkeymanager --deps
 ```
