@@ -1,6 +1,6 @@
 # GVTools Overview
 
-**Infrastructure Management Toolkit**
+**Infrastructure Management Toolkit** - Version 2.0.0
 
 GVTools is a comprehensive collection of command-line utilities for managing SSH-based server infrastructure, developed with a focus on security, automation, and operator experience.
 
@@ -60,20 +60,37 @@ gv help fleet
 
 ### Monitoring & Diagnostics
 
-| Tool         | Aliases | Purpose                     |
-| ------------ | ------- | --------------------------- |
-| gvlogtriage  | lt      | Auth/system log analysis    |
-| gvdnscheck   | dns     | DNS validation              |
-| gvnetdiag    | nd      | Network diagnostics         |
-| gvportsentry | ports   | Port scanning and baselines |
+| Tool         | Aliases     | Purpose                          |
+| ------------ | ----------- | -------------------------------- |
+| gvlogtriage  | lt          | Auth/system log analysis         |
+| gvdnscheck   | dns         | DNS validation                   |
+| gvnetdiag    | nd          | Network diagnostics              |
+| gvportsentry | ports       | Port scanning and baselines      |
+| gvhealth     | health, hl  | Host and service health checks   |
+| gvmetrics    | metrics, mx | Resource metrics and time series |
+| gvtcptest    | tcp, tc     | TCP connectivity testing         |
+| gvjournal    | jrnl, j     | Systemd journal log fetching     |
 
 ### Configuration & DevOps
 
-| Tool         | Aliases | Purpose              |
-| ------------ | ------- | -------------------- |
-| gvdotctl     | dt      | Dotfile management   |
-| gvgitopsinit | gi      | GitOps scaffolding   |
-| gvbackupctl  | bk      | Backup configuration |
+| Tool           | Aliases    | Purpose                             |
+| -------------- | ---------- | ----------------------------------- |
+| gvdotctl       | dt         | Dotfile management                  |
+| gvgitopsinit   | gi         | GitOps scaffolding                  |
+| gvbackupctl    | bk         | Backup configuration                |
+| gvconfigrender | render, rr | Template rendering and deployment   |
+| gvnginxctl     | ngx, nx    | Nginx config testing and management |
+
+### Fleet Operations (New in 2.0)
+
+| Tool          | Aliases     | Purpose                                   |
+| ------------- | ----------- | ----------------------------------------- |
+| gvdeploy      | dep, run    | Execute commands/scripts across hosts     |
+| gvsync        | sync, sx    | Rsync wrapper with SSH profile awareness  |
+| gvsystemdctl  | sd, svc     | Fleet-safe systemd service management     |
+| gvrebootctl   | reboot, rb  | Safe reboot coordination and validation   |
+| gvpolicy      | pol, pl     | Policy rules for fleet security baselines |
+| gvdnsprovider | dnsprov, dp | DNS provider credential management        |
 
 ## Architecture
 

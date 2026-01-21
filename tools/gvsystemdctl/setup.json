@@ -1,0 +1,32 @@
+{
+    "tool": "gvsystemdctl",
+    "version": "2.0.0",
+    "description": "Fleet-safe systemd management with rollout controls",
+    "deps": {
+        "arch": [],
+        "debian": []
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvsystemdctl.py",
+                "dst": "~/.local/bin/gvsystemdctl",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/sd",
+                "target": "~/.local/bin/gvsystemdctl"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/svc",
+                "target": "~/.local/bin/gvsystemdctl"
+            }
+        ]
+    }
+}

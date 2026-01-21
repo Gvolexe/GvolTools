@@ -1,6 +1,6 @@
 {
     "tool": "gvpermcheck",
-    "version": "1.2.80",
+    "version": "2.0.0",
     "description": "Permission and ownership auditing",
     "deps": {
         "arch": [],

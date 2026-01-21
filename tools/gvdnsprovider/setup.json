@@ -1,0 +1,32 @@
+{
+    "tool": "gvdnsprovider",
+    "version": "2.0.0",
+    "description": "DNS provider credential store for Cloudflare and other providers",
+    "deps": {
+        "arch": [],
+        "debian": []
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvdnsprovider.py",
+                "dst": "~/.local/bin/gvdnsprovider",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/dnsprov",
+                "target": "~/.local/bin/gvdnsprovider"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/dp",
+                "target": "~/.local/bin/gvdnsprovider"
+            }
+        ]
+    }
+}

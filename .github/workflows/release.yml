@@ -126,6 +126,18 @@ jobs:
             | **gvgitopsinit** | GitOps scaffolding |
             | **gvpermcheck** | Permission auditing |
             | **gvolkeymanager** | SSH key management |
+            | **gvhealth** | Host and service health checks |
+            | **gvmetrics** | Resource metrics collection |
+            | **gvtcptest** | TCP connectivity testing |
+            | **gvjournal** | Systemd journal log fetching |
+            | **gvdeploy** | Command/script execution across hosts |
+            | **gvsync** | Rsync wrapper with SSH profiles |
+            | **gvsystemdctl** | Fleet-safe systemd management |
+            | **gvrebootctl** | Safe reboot coordination |
+            | **gvpolicy** | Fleet security policy rules |
+            | **gvdnsprovider** | DNS provider credentials |
+            | **gvconfigrender** | Template rendering and deployment |
+            | **gvnginxctl** | Nginx config testing and management |
 
             ### Requirements
 
@@ -199,7 +211,7 @@ jobs:
           gv --help || { echo "FAIL: gv"; FAILED=1; }
 
           # All tool commands
-          TOOLS="gvfleet gvsshprofile gvhostbootstrap gvsshaudit gvknownhostsctl gvsecretsync gvcertctl gvfirewallctl gvupdates gvsudoauth gvlogtriage gvbackupctl gvdnscheck gvnetdiag gvportsentry gvdotctl gvgitopsinit gvpermcheck gvolkeymanager"
+          TOOLS="gvfleet gvsshprofile gvhostbootstrap gvsshaudit gvknownhostsctl gvsecretsync gvcertctl gvfirewallctl gvupdates gvsudoauth gvlogtriage gvbackupctl gvdnscheck gvnetdiag gvportsentry gvdotctl gvgitopsinit gvpermcheck gvolkeymanager gvhealth gvmetrics gvtcptest gvjournal gvdeploy gvsync gvsystemdctl gvrebootctl gvpolicy gvdnsprovider gvconfigrender gvnginxctl"
 
           for tool in $TOOLS; do
             echo "Testing: $tool --help"
@@ -207,7 +219,7 @@ jobs:
           done
 
           # Test all aliases work (excluding su/backup which conflict with system commands)
-          ALIASES="fleet f gvf sp gvsp hb gvhb sa sshaudit gvsa kh gvkh sec secrets gvs cert gvcert fw gvfw upd gvu sudoauth gvsu lt logtriage gvlt bk gvbk dns dc gvdns nd netdiag gvnd ports gvps dt dot gvdt gi gitops gvgi pc perm gvpc km gvkm"
+          ALIASES="fleet f gvf sp gvsp hb gvhb sa sshaudit gvsa kh gvkh sec secrets gvs cert gvcert fw gvfw upd gvu sudoauth gvsu lt logtriage gvlt bk gvbk dns dc gvdns nd netdiag gvnd ports gvps dt dot gvdt gi gitops gvgi pc perm gvpc km gvkm health hl metrics mx tcp tc jrnl j dep run sync sx sd svc reboot rb pol pl dnsprov dp render rr ngx nx"
 
           for alias in $ALIASES; do
             echo "Testing alias: $alias --help"
@@ -233,6 +245,8 @@ jobs:
     name: Publish to AUR
     runs-on: ubuntu-latest
     needs: [release, test-arch-package]
+    # Only publish to AUR from main branch releases
+    if: github.ref_type == 'tag' && github.event.base_ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 

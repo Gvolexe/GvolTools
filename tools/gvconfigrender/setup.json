@@ -1,0 +1,32 @@
+{
+    "tool": "gvconfigrender",
+    "version": "2.0.0",
+    "description": "Template rendering and deployment for fleet configurations",
+    "deps": {
+        "arch": [],
+        "debian": []
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvconfigrender.py",
+                "dst": "~/.local/bin/gvconfigrender",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/render",
+                "target": "~/.local/bin/gvconfigrender"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/rr",
+                "target": "~/.local/bin/gvconfigrender"
+            }
+        ]
+    }
+}

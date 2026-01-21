@@ -1,0 +1,32 @@
+{
+    "tool": "gvtcptest",
+    "version": "2.0.0",
+    "description": "TCP connectivity testing with failure classification",
+    "deps": {
+        "arch": [],
+        "debian": []
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvtcptest.py",
+                "dst": "~/.local/bin/gvtcptest",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/tcp",
+                "target": "~/.local/bin/gvtcptest"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/tc",
+                "target": "~/.local/bin/gvtcptest"
+            }
+        ]
+    }
+}

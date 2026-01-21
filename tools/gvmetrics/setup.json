@@ -1,0 +1,32 @@
+{
+    "tool": "gvmetrics",
+    "version": "2.0.0",
+    "description": "Resource metrics collection and time series recording",
+    "deps": {
+        "arch": [],
+        "debian": []
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvmetrics.py",
+                "dst": "~/.local/bin/gvmetrics",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/metrics",
+                "target": "~/.local/bin/gvmetrics"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/mx",
+                "target": "~/.local/bin/gvmetrics"
+            }
+        ]
+    }
+}
