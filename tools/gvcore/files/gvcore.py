@@ -761,21 +761,43 @@ def ssh_exec(
     Otherwise falls back to password-based sudo.
     """
     import paramiko.agent
+    import os
     
     forward_agent = getattr(client, "_gvtools_forward_agent", False)
-    Output.debug(f"executing command (sudo={sudo}, forward_agent={forward_agent})...")
+    agent_available = False
+    
+    # Check if local SSH agent is available
+    if forward_agent:
+        auth_sock = os.environ.get("SSH_AUTH_SOCK")
+        if auth_sock and os.path.exists(auth_sock):
+            try:
+                agent = paramiko.agent.Agent()
+                keys = agent.get_keys()
+                agent_available = len(keys) > 0
+                agent.close()
+                if agent_available:
+                    Output.debug(f"local SSH agent available with {len(keys)} key(s)")
+                else:
+                    Output.debug("local SSH agent has no keys")
+            except Exception as e:
+                Output.debug(f"could not connect to local SSH agent: {e}")
+        else:
+            Output.debug("SSH_AUTH_SOCK not set or socket not found")
+    
+    Output.debug(f"executing command (sudo={sudo}, forward_agent={forward_agent}, agent_available={agent_available})...")
     
     # Get transport for the channel
     transport = client.get_transport()
     channel = transport.open_session()
     
-    # Request agent forwarding if enabled
-    if forward_agent:
+    # Request agent forwarding if enabled and agent is available
+    if forward_agent and agent_available:
         try:
             paramiko.agent.AgentRequestHandler(channel)
             Output.debug("SSH agent forwarding enabled on channel")
         except Exception as e:
             Output.debug(f"could not enable agent forwarding: {e}")
+            agent_available = False
     
     # Request PTY for sudo
     if sudo:
@@ -783,15 +805,15 @@ def ssh_exec(
     
     # Build command
     if sudo:
-        if forward_agent and not password:
+        if forward_agent and agent_available and not password:
             # Use SSH agent for sudo auth (pam_ssh_agent_auth)
-            # -A uses SUDO_ASKPASS (won't work here), so we just run sudo
-            # and rely on pam_ssh_agent_auth reading from forwarded agent
             cmd = f"sudo sh -lc {shlex.quote(command)}"
             Output.debug("using SSH agent for sudo authentication")
         else:
             # Use password-based sudo
             cmd = f"sudo -S -p '' sh -lc {shlex.quote(command)}"
+            if not password:
+                Output.debug("warning: sudo requested but no password provided and agent not available")
     else:
         cmd = f"sh -lc {shlex.quote(command)}"
     

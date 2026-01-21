@@ -1,6 +1,6 @@
 {
     "tool": "gv",
-    "version": "1.2.6",
+    "version": "1.2.7",
     "description": "GVTools help and command dispatcher",
     "deps": {
         "arch": [],
