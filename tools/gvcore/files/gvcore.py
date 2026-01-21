@@ -209,18 +209,26 @@ class Output:
         if Output.json_mode:
             return
         
-        # Calculate column widths
+        # Strip ANSI codes for width calculation
+        import re
+        ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
+        def visible_len(s: str) -> int:
+            return len(ansi_escape.sub('', str(s)))
+        
+        # Calculate column widths based on visible length
         widths = [len(h) for h in headers]
         for row in rows:
             for i, cell in enumerate(row):
                 if i < len(widths):
-                    widths[i] = max(widths[i], len(str(cell)))
+                    widths[i] = max(widths[i], visible_len(cell))
         
         prefix = " " * indent
         
         # Header
-        header_line = " │ ".join(c(h.ljust(widths[i]), Colors.BOLD) for i, h in enumerate(headers))
-        print(f"{prefix}{header_line}")
+        header_parts = []
+        for i, h in enumerate(headers):
+            header_parts.append(c(h.ljust(widths[i]), Colors.BOLD))
+        print(f"{prefix}{' │ '.join(header_parts)}")
         
         # Separator
         sep_line = "─┼─".join("─" * w for w in widths)
@@ -228,8 +236,13 @@ class Output:
         
         # Rows
         for row in rows:
-            row_line = " │ ".join(str(cell).ljust(widths[i]) for i, cell in enumerate(row))
-            print(f"{prefix}{row_line}")
+            row_parts = []
+            for i, cell in enumerate(row):
+                cell_str = str(cell)
+                # Pad based on visible length difference
+                padding = widths[i] - visible_len(cell_str)
+                row_parts.append(cell_str + " " * padding)
+            print(f"{prefix}{' │ '.join(row_parts)}")
     
     @staticmethod
     def json_output(data: Any) -> None:
