@@ -14,7 +14,7 @@
         "targets": [
             {
                 "type": "mkdir",
-                "dst": "~/.local/lib/gvtools"
+                "path": "~/.local/lib/gvtools"
             },
             {
                 "type": "copy",

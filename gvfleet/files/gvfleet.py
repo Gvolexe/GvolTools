@@ -17,7 +17,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -26,10 +25,10 @@ sys.path.insert(0, str(Path.home() / ".local" / "lib" / "gvtools"))
 
 from gvcore import (
     Output, Colors, c, die,
-    Host, Inventory, Target, TargetSelector,
+    Host, Inventory, Target,
     SSHProfileManager,
-    add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    confirm, TOOL_REGISTRY,
+    add_common_args, get_selector_from_args, apply_common_args,
+    confirm,
 )
 
 __version__ = "0.5.0"

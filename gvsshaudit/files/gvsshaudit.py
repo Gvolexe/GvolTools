@@ -15,7 +15,6 @@ Author: Gvol (gvol@nexusystems.org)
 from __future__ import annotations
 
 import argparse
-import os
 import stat
 import sys
 from pathlib import Path
@@ -26,7 +25,7 @@ from gvcore import (
     Output, Colors, c, die,
     Target, Inventory,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    ssh_connect, ssh_exec, local_exec,
+    ssh_connect, ssh_exec,
 )
 
 __version__ = "0.5.0"

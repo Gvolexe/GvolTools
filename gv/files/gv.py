@@ -13,7 +13,6 @@ import argparse
 import json
 import subprocess
 import sys
-from pathlib import Path
 
 __version__ = "0.5.0"
 
@@ -261,8 +260,8 @@ def cmd_version(args: argparse.Namespace) -> None:
     """Show version info."""
     print(f"GVTools v{__version__}")
     print(f"Tools installed: {len(TOOLS)}")
-    print(f"\nAuthor: Gvol (gvol@nexusystems.org)")
-    print(f"GitHub: https://github.com/Gvolexe/GvolTools")
+    print("\nAuthor: Gvol (gvol@nexusystems.org)")
+    print("GitHub: https://github.com/Gvolexe/GvolTools")
 
 
 def main() -> None:
