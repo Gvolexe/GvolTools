@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - "v*"
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -36,20 +39,38 @@ jobs:
       - name: Check version consistency
         run: |
           echo "Checking version consistency..."
-          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          echo "Release tag version: $TAG_VERSION"
-
+          
           # Check gvcore.py version (single source of truth)
           GVCORE_VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' tools/gvcore/files/gvcore.py)
           echo "gvcore.py version: $GVCORE_VERSION"
-          if [ "$GVCORE_VERSION" != "$TAG_VERSION" ]; then
-            echo "ERROR: gvcore.py version mismatch!"
-            echo "Expected: $TAG_VERSION"
-            echo "Found: $GVCORE_VERSION"
-            exit 1
+          
+          # On tag push, verify tag matches gvcore version
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+            echo "Release tag version: $TAG_VERSION"
+            if [ "$GVCORE_VERSION" != "$TAG_VERSION" ]; then
+              echo "ERROR: gvcore.py version mismatch!"
+              echo "Expected: $TAG_VERSION"
+              echo "Found: $GVCORE_VERSION"
+              exit 1
+            fi
+            echo "✓ Version $TAG_VERSION matches gvcore.py"
+          else
+            echo "✓ PR check - gvcore version: $GVCORE_VERSION"
           fi
 
-          echo "✓ Version $TAG_VERSION matches gvcore.py"
+          # Verify all setup.json versions match gvcore
+          echo "Checking setup.json versions..."
+          for f in tools/*/setup.json; do
+            SETUP_VERSION=$(python -c "import json; print(json.load(open('$f')).get('version', 'unknown'))")
+            if [ "$SETUP_VERSION" != "$GVCORE_VERSION" ]; then
+              echo "ERROR: $f version mismatch!"
+              echo "Expected: $GVCORE_VERSION"
+              echo "Found: $SETUP_VERSION"
+              exit 1
+            fi
+          done
+          echo "✓ All setup.json versions match"
 
       - name: Run tests
         run: |
@@ -59,6 +80,7 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     needs: validate
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
 
