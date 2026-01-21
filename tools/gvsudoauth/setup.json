@@ -1,6 +1,6 @@
 {
     "tool": "gvsudoauth",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Sudo authentication configuration (password/NOPASSWD/SSH-agent)",
     "deps": {
         "arch": [],

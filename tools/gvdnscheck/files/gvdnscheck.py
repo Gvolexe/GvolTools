@@ -26,7 +26,7 @@ from gvcore import (
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
 )
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 
 def resolve_dns(hostname: str, record_type: str = "A") -> list[str]:

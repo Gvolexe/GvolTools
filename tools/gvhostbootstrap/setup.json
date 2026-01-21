@@ -1,6 +1,6 @@
 {
     "tool": "gvhostbootstrap",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Bootstrap hosts to secure baseline (init, harden, status)",
     "deps": {
         "arch": [

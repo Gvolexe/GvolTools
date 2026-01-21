@@ -24,7 +24,7 @@ from gvcore import (
     ssh_connect, ssh_exec,
 )
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 
 def make_ssh_log_script(since: str) -> str:
