@@ -13,6 +13,14 @@ import argparse
 import json
 import subprocess
 import sys
+from pathlib import Path
+
+# Import version from gvcore
+sys.path.insert(0, str(Path.home() / ".local" / "lib" / "gvtools"))
+try:
+    from gvcore import __version__
+except ImportError:
+    __version__ = "unknown"
 
 
 NO_COLOR = "NO_COLOR" in __import__("os").environ

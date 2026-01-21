@@ -20,6 +20,13 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+# Import version from gvcore
+sys.path.insert(0, str(Path.home() / ".local" / "lib" / "gvtools"))
+try:
+    from gvcore import __version__
+except ImportError:
+    __version__ = "1.2.81"
+
 try:
     import paramiko
 except ImportError:
