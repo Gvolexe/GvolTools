@@ -28,7 +28,7 @@ jobs:
       - name: Validate all setup.json files
         run: |
           echo "Validating setup.json files..."
-          for f in */setup.json; do
+          for f in tools/*/setup.json; do
             python -c "import json; json.load(open('$f'))" || exit 1
             echo "  ✓ $f"
           done
@@ -38,7 +38,7 @@ jobs:
           echo "Checking version consistency..."
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
           echo "Release tag version: $TAG_VERSION"
-          
+
           # Check installer version
           INSTALLER_VERSION=$(grep 'readonly VERSION=' installgvtools.sh | cut -d'"' -f2)
           echo "Installer version: $INSTALLER_VERSION"
@@ -46,15 +46,15 @@ jobs:
             echo "ERROR: Installer version mismatch!"
             exit 1
           fi
-          
+
           # Check gvcore version
-          GVCORE_VERSION=$(python -c "import json; print(json.load(open('gvcore/setup.json'))['version'])")
+          GVCORE_VERSION=$(python -c "import json; print(json.load(open('tools/gvcore/setup.json'))['version'])")
           echo "gvcore version: $GVCORE_VERSION"
           if [ "$GVCORE_VERSION" != "$TAG_VERSION" ]; then
             echo "ERROR: gvcore version mismatch!"
             exit 1
           fi
-          
+
           echo "✓ All versions match $TAG_VERSION"
 
       - name: Run tests
@@ -72,15 +72,9 @@ jobs:
         id: changelog
         run: |
           # Count tools
-          TOOL_COUNT=$(ls -d */setup.json 2>/dev/null | wc -l)
-          
-          # Get tool list
-          TOOLS=$(for f in */setup.json; do
-            dirname "$f"
-          done | sort | tr '\n' ' ')
-          
+          TOOL_COUNT=$(ls -d tools/*/setup.json 2>/dev/null | wc -l)
+
           echo "tool_count=$TOOL_COUNT" >> $GITHUB_OUTPUT
-          echo "tools=$TOOLS" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -90,50 +84,67 @@ jobs:
           prerelease: ${{ contains(github.ref, '-') }}
           body: |
             ## GVTools ${{ github.ref_name }}
-            
+
             ### Installation
-            
+
+            **From Source:**
             ```bash
-            # Clone the repository
             git clone https://github.com/Gvolexe/GvolTools.git
             cd GvolTools
-            
-            # Install all tools
             ./installgvtools.sh install-all --deps
-            
-            # Or install specific tools
-            ./installgvtools.sh install gvfleet --deps
             ```
-            
+
+            **Arch Linux (AUR):**
+            ```bash
+            yay -S gvoltools
+            # or
+            yay -S gvoltools-git
+            ```
+
+            **Debian/Ubuntu:**
+            ```bash
+            # Download .deb from releases
+            sudo dpkg -i gvoltools_${{ github.ref_name }}_all.deb
+            sudo apt-get install -f
+            ```
+
             ### Included Tools (${{ steps.changelog.outputs.tool_count }})
-            
-            - **gv** - Help command and tool dispatcher
-            - **gvfleet** - Host inventory management
-            - **gvsshprofile** - SSH connection profiles
-            - **gvhostbootstrap** - Host security bootstrap
-            - **gvsshaudit** - SSH configuration auditing
-            - **gvknownhostsctl** - known_hosts management
-            - **gvsecretsync** - Encrypted secrets distribution
-            - **gvcertctl** - TLS certificate management (ACME/Cloudflare)
-            - **gvfirewallctl** - Firewall baseline management
-            - **gvupdates** - Security updates management
-            - **gvsudoauth** - Sudo authentication configuration
-            - **gvlogtriage** - Log analysis (SSH, sudo, fail2ban)
-            - **gvbackupctl** - Backup with restic
-            - **gvdnscheck** - DNS validation
-            - **gvnetdiag** - Network diagnostics
-            - **gvportsentry** - Port scanning and baselines
-            - **gvdotctl** - Dotfile management
-            - **gvgitopsinit** - GitOps scaffolding
-            - **gvpermcheck** - Permission auditing
-            - **gvolkeymanager** - SSH key management
-            
+
+            | Tool | Description |
+            |------|-------------|
+            | **gv** | Help command and tool dispatcher |
+            | **gvfleet** | Host inventory management |
+            | **gvsshprofile** | SSH connection profiles |
+            | **gvhostbootstrap** | Host security bootstrap |
+            | **gvsshaudit** | SSH configuration auditing |
+            | **gvknownhostsctl** | known_hosts management |
+            | **gvsecretsync** | Encrypted secrets distribution |
+            | **gvcertctl** | TLS certificate management |
+            | **gvfirewallctl** | Firewall baseline management |
+            | **gvupdates** | Security updates management |
+            | **gvsudoauth** | Sudo authentication configuration |
+            | **gvlogtriage** | Log analysis |
+            | **gvbackupctl** | Backup with restic |
+            | **gvdnscheck** | DNS validation |
+            | **gvnetdiag** | Network diagnostics |
+            | **gvportsentry** | Port scanning and baselines |
+            | **gvdotctl** | Dotfile management |
+            | **gvgitopsinit** | GitOps scaffolding |
+            | **gvpermcheck** | Permission auditing |
+            | **gvolkeymanager** | SSH key management |
+
             ### Requirements
-            
+
             - Python 3.10+
-            - paramiko (for SSH operations)
-            - cryptography (for secrets encryption)
-            
+            - paramiko
+            - cryptography
+
+            ### Supported Distributions
+
+            - Ubuntu 22.04+, Debian 11+
+            - Fedora 39+, Rocky Linux 8+
+            - Arch Linux, openSUSE
+
             See [documentation](docs/) for detailed usage.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

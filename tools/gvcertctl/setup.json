@@ -1,0 +1,43 @@
+{
+    "tool": "gvcertctl",
+    "version": "1.0.0",
+    "description": "TLS certificate issuance and deployment (ACME/Let's Encrypt)",
+    "deps": {
+        "arch": [
+            "certbot",
+            "python-certbot-dns-cloudflare"
+        ],
+        "debian": [
+            "certbot",
+            "python3-certbot-dns-cloudflare"
+        ]
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvcertctl.py",
+                "dst": "~/.local/bin/gvcertctl",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/cert",
+                "target": "~/.local/bin/gvcertctl"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/cc",
+                "target": "~/.local/bin/gvcertctl"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gvcert",
+                "target": "~/.local/bin/gvcertctl"
+            }
+        ]
+    }
+}

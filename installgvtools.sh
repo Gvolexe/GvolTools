@@ -6,9 +6,11 @@
 #
 set -euo pipefail
 
-readonly VERSION="0.5.0"
+readonly VERSION="1.0.0"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT_DIR
+TOOLS_DIR="$ROOT_DIR/tools"
+readonly TOOLS_DIR
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Colors
@@ -132,7 +134,7 @@ list_tools() {
     header "Available Tools"
     
     local found=0
-    for setup_file in "$ROOT_DIR"/*/setup.json; do
+    for setup_file in "$TOOLS_DIR"/*/setup.json; do
         [[ -f "$setup_file" ]] || continue
         
         local tool_dir
@@ -216,7 +218,7 @@ do_install() {
     local tool="$1"
     local with_deps="${2:-false}"
     
-    local tool_dir="$ROOT_DIR/$tool"
+    local tool_dir="$TOOLS_DIR/$tool"
     [[ -d "$tool_dir" ]] || die "Tool not found: $tool"
     [[ -f "$tool_dir/setup.json" ]] || die "Missing setup.json in $tool"
     
@@ -229,7 +231,7 @@ do_install() {
     
     if [[ -n "$requires" ]]; then
         for req in $requires; do
-            local req_dir="$ROOT_DIR/$req"
+            local req_dir="$TOOLS_DIR/$req"
             if [[ -d "$req_dir" ]] && [[ -f "$req_dir/setup.json" ]]; then
                 msg_info "Installing required dependency: $req"
                 do_install "$req" "$with_deps"
@@ -354,7 +356,7 @@ do_install_all() {
     # Install order: gvcore first (no requires), then gv, then others
     local install_order=("gvcore" "gv")
     
-    for setup_file in "$ROOT_DIR"/*/setup.json; do
+    for setup_file in "$TOOLS_DIR"/*/setup.json; do
         [[ -f "$setup_file" ]] || continue
         local tool_name
         tool_name="$(basename "$(dirname "$setup_file")")"
@@ -366,7 +368,7 @@ do_install_all() {
     
     for tool in "${install_order[@]}"; do
         if [[ -z "${installed[$tool]:-}" ]]; then
-            local tool_dir="$ROOT_DIR/$tool"
+            local tool_dir="$TOOLS_DIR/$tool"
             if [[ -d "$tool_dir" ]] && [[ -f "$tool_dir/setup.json" ]]; then
                 echo
                 msg_info "Installing: $tool"
@@ -388,7 +390,7 @@ do_install_all() {
 
 do_uninstall() {
     local tool="$1"
-    local tool_dir="$ROOT_DIR/$tool"
+    local tool_dir="$TOOLS_DIR/$tool"
     
     [[ -f "$tool_dir/setup.json" ]] || die "Missing setup.json in $tool"
     
@@ -448,7 +450,7 @@ PY
 
 do_status() {
     local tool="$1"
-    local tool_dir="$ROOT_DIR/$tool"
+    local tool_dir="$TOOLS_DIR/$tool"
     
     [[ -f "$tool_dir/setup.json" ]] || die "Missing setup.json in $tool"
     

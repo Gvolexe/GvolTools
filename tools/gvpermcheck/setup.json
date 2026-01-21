@@ -1,0 +1,37 @@
+{
+    "tool": "gvpermcheck",
+    "version": "1.0.0",
+    "description": "Permission and ownership auditing",
+    "deps": {
+        "arch": [],
+        "debian": []
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvpermcheck.py",
+                "dst": "~/.local/bin/gvpermcheck",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/pc",
+                "target": "~/.local/bin/gvpermcheck"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/perm",
+                "target": "~/.local/bin/gvpermcheck"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gvpc",
+                "target": "~/.local/bin/gvpermcheck"
+            }
+        ]
+    }
+}

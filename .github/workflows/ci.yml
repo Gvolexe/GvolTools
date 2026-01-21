@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, dev/v1]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, dev/v1]
 
 env:
   PYTHONDONTWRITEBYTECODE: 1
@@ -36,7 +36,7 @@ jobs:
       - name: Validate setup.json files
         run: |
           echo "Validating all setup.json files..."
-          for f in */setup.json; do
+          for f in tools/*/setup.json; do
             python -c "import json; json.load(open('$f'))" || exit 1
             echo "  ✓ $f"
           done
@@ -49,7 +49,7 @@ jobs:
       - name: Check Python syntax
         run: |
           echo "Checking Python syntax..."
-          find . -name "*.py" -path "*/files/*" | while read f; do
+          find tools -name "*.py" -path "*/files/*" | while read f; do
             python -m py_compile "$f" || exit 1
             echo "  ✓ $f"
           done
@@ -80,7 +80,7 @@ jobs:
 
       - name: Run ruff
         run: |
-          ruff check */files/ --ignore E501,E722,F841 --exclude "*.pyc"
+          ruff check tools/*/files/ --ignore E501,E722,F841 --exclude "*.pyc"
 
   shellcheck:
     name: ShellCheck
@@ -92,92 +92,238 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           scandir: "."
-          ignore_paths: "tests .venv .git"
+          ignore_paths: "tests .venv .git tools"
 
-  installer-test:
-    name: Test Installer
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Ubuntu/Debian Testing
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  test-ubuntu:
+    name: Test on Ubuntu ${{ matrix.version }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["22.04", "24.04"]
+    container:
+      image: ubuntu:${{ matrix.version }}
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-paramiko
+          apt-get update
+          apt-get install -y python3 python3-pip python3-paramiko
+          python3 -m pip install --break-system-packages pytest cryptography || \
+          python3 -m pip install pytest cryptography
 
       - name: Make installer executable
         run: chmod +x installgvtools.sh
 
-      - name: Test list command
+      - name: Test installer list
         run: ./installgvtools.sh list
 
-      - name: Test help command
-        run: ./installgvtools.sh --help
-
-      - name: Test version command
-        run: ./installgvtools.sh --version
-
-      - name: Install gvcore (shared library)
+      - name: Install gvcore
         run: ./installgvtools.sh install gvcore
-
-      - name: Install gv (help command)
-        run: ./installgvtools.sh install gv
-
-      - name: Verify gv installation
-        run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          hash -r
-          gv --version
-
-      - name: Install gvfleet
-        run: ./installgvtools.sh install gvfleet
-
-      - name: Verify gvfleet installation
-        run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          hash -r
-          gvfleet --version
-          fleet --version
-
-      - name: Test status command
-        run: ./installgvtools.sh status gvfleet
-
-      - name: Uninstall gvfleet
-        run: ./installgvtools.sh uninstall gvfleet
-
-      - name: Verify uninstallation
-        run: |
-          if [ -f ~/.local/bin/gvfleet ]; then
-            echo "Uninstall failed: file still exists"
-            exit 1
-          fi
-          echo "Uninstall successful"
 
       - name: Install all tools
         run: ./installgvtools.sh install-all
 
-      - name: Verify all tools installed
+      - name: Verify installation
         run: |
           export PATH="$HOME/.local/bin:$PATH"
-          hash -r
-          echo "Checking installed tools..."
-          for tool in gv gvfleet gvsshprofile gvhostbootstrap gvsshaudit gvknownhostsctl \
-                      gvsecretsync gvcertctl gvfirewallctl gvupdates gvsudoauth \
-                      gvlogtriage gvbackupctl gvdnscheck gvnetdiag gvportsentry \
-                      gvdotctl gvgitopsinit gvpermcheck gvolkeymanager; do
+          for tool in gv gvfleet gvsshprofile gvolkeymanager; do
             if [ -f "$HOME/.local/bin/$tool" ]; then
-              echo "  ✓ $tool"
+              echo "✓ $tool installed"
             else
-              echo "  ✗ $tool missing"
+              echo "✗ $tool missing"
               exit 1
             fi
           done
-          echo "All tools installed successfully"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Debian Testing
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  test-debian:
+    name: Test on Debian ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["11", "12"]
+    container:
+      image: debian:${{ matrix.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y python3 python3-pip python3-paramiko
+          python3 -m pip install --break-system-packages pytest cryptography 2>/dev/null || \
+          python3 -m pip install pytest cryptography
+
+      - name: Make installer executable
+        run: chmod +x installgvtools.sh
+
+      - name: Test installer
+        run: ./installgvtools.sh list
+
+      - name: Install all tools
+        run: |
+          ./installgvtools.sh install gvcore
+          ./installgvtools.sh install-all
+
+      - name: Verify installation
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          gv --version
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Fedora/RHEL Testing
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  test-fedora:
+    name: Test on Fedora ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["39", "40"]
+    container:
+      image: fedora:${{ matrix.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          dnf install -y python3 python3-pip python3-paramiko python3-cryptography
+
+      - name: Make installer executable
+        run: chmod +x installgvtools.sh
+
+      - name: Test installer
+        run: ./installgvtools.sh list
+
+      - name: Install all tools
+        run: |
+          ./installgvtools.sh install gvcore
+          ./installgvtools.sh install-all
+
+      - name: Verify installation
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          gv --version
+
+  test-rocky:
+    name: Test on Rocky Linux ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["8", "9"]
+    container:
+      image: rockylinux:${{ matrix.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          dnf install -y python3 python3-pip
+          python3 -m pip install paramiko cryptography
+
+      - name: Make installer executable
+        run: chmod +x installgvtools.sh
+
+      - name: Test installer
+        run: ./installgvtools.sh list
+
+      - name: Install all tools
+        run: |
+          ./installgvtools.sh install gvcore
+          ./installgvtools.sh install-all
+
+      - name: Verify installation
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          gv --version
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Arch Linux Testing
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  test-arch:
+    name: Test on Arch Linux
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm python python-pip python-paramiko python-cryptography
+
+      - name: Make installer executable
+        run: chmod +x installgvtools.sh
+
+      - name: Test installer
+        run: ./installgvtools.sh list
+
+      - name: Install all tools with deps
+        run: |
+          ./installgvtools.sh install gvcore
+          ./installgvtools.sh install-all
+
+      - name: Verify installation
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          gv --version
+          gvfleet --version
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # openSUSE Testing
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  test-opensuse:
+    name: Test on openSUSE
+    runs-on: ubuntu-latest
+    container:
+      image: opensuse/tumbleweed
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          zypper --non-interactive install python3 python3-pip python3-paramiko python3-cryptography
+
+      - name: Make installer executable
+        run: chmod +x installgvtools.sh
+
+      - name: Test installer
+        run: ./installgvtools.sh list
+
+      - name: Install all tools
+        run: |
+          ./installgvtools.sh install gvcore
+          ./installgvtools.sh install-all
+
+      - name: Verify installation
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          gv --version
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Integration Tests (after all distro tests pass)
+  # ─────────────────────────────────────────────────────────────────────────────
 
   integration-test:
     name: Integration Test

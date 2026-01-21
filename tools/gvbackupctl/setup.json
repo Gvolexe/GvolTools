@@ -1,0 +1,41 @@
+{
+    "tool": "gvbackupctl",
+    "version": "1.0.0",
+    "description": "Backup configuration and verification (restic)",
+    "deps": {
+        "arch": [
+            "restic"
+        ],
+        "debian": [
+            "restic"
+        ]
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvbackupctl.py",
+                "dst": "~/.local/bin/gvbackupctl",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/bk",
+                "target": "~/.local/bin/gvbackupctl"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/backup",
+                "target": "~/.local/bin/gvbackupctl"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gvbk",
+                "target": "~/.local/bin/gvbackupctl"
+            }
+        ]
+    }
+}

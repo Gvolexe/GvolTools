@@ -1,0 +1,32 @@
+{
+    "tool": "gvupdates",
+    "version": "1.0.0",
+    "description": "Security updates management and reporting",
+    "deps": {
+        "arch": [],
+        "debian": []
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvupdates.py",
+                "dst": "~/.local/bin/gvupdates",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/upd",
+                "target": "~/.local/bin/gvupdates"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gvu",
+                "target": "~/.local/bin/gvupdates"
+            }
+        ]
+    }
+}

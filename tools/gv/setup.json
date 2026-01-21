@@ -1,0 +1,30 @@
+{
+    "tool": "gv",
+    "version": "1.0.0",
+    "description": "GVTools help and command dispatcher",
+    "deps": {
+        "arch": [],
+        "debian": []
+    },
+    "requires": [],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gv.py",
+                "dst": "~/.local/bin/gv",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gvtools",
+                "target": "~/.local/bin/gv"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gvhelp",
+                "target": "~/.local/bin/gv"
+            }
+        ]
+    }
+}
