@@ -106,7 +106,7 @@ fi
 """
 
 
-def audit_remote(target: Target, strict_hostkey: bool = False, password: str = "", key_path: str = "") -> dict:
+def audit_remote(target: Target, strict_hostkey: bool = False, password: str = "", key_path: str = "", sudo_password: str = "") -> dict:
     """Audit remote SSH server."""
     try:
         client = ssh_connect(target, password=password, key_path=key_path, strict_hostkey=strict_hostkey)
@@ -168,7 +168,7 @@ def cmd_remote(args: argparse.Namespace) -> None:
     
     Output.header(f"Remote SSH Audit: {t.host}")
     
-    result = audit_remote(t, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
+    result = audit_remote(t, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path, sudo_password=sudo_password)
     
     if Output.json_mode:
         Output.json_output(result)
@@ -199,7 +199,7 @@ def cmd_fleet(args: argparse.Namespace) -> None:
     for host in hosts:
         Output.info(f"Auditing {host.name}...")
         target = Target.from_host(host, default_user=host.user or "root")
-        result = audit_remote(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
+        result = audit_remote(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path, sudo_password=sudo_password)
         results.append(result)
     
     if Output.json_mode:
