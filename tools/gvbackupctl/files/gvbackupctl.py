@@ -26,7 +26,7 @@ from gvcore import (
     ssh_connect, ssh_exec, get_ssh_credentials,
 )
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 BACKUP_CONFIG = GVTOOLS_CONFIG / "backupctl"
 BACKUP_INDEX = BACKUP_CONFIG / "backups.json"

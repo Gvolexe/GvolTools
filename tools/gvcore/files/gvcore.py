@@ -30,7 +30,7 @@ try:
 except ImportError:
     paramiko = None
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # XDG Paths
@@ -660,12 +660,32 @@ def ssh_connect(
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         Output.debug("host key verification disabled (use --strict-hostkey for production)")
     
-    Output.debug(f"connecting to {target}...")
+    # Load SSH config for host-specific settings
+    ssh_config_path = Path.home() / ".ssh" / "config"
+    ssh_config = paramiko.SSHConfig()
+    if ssh_config_path.exists():
+        try:
+            with open(ssh_config_path) as f:
+                ssh_config.parse(f)
+            Output.debug(f"loaded SSH config from {ssh_config_path}")
+        except Exception as e:
+            Output.debug(f"could not parse SSH config: {e}")
+    
+    # Get host-specific config
+    host_config = ssh_config.lookup(target.host)
+    
+    # Apply SSH config settings
+    hostname = host_config.get("hostname", target.host)
+    port = int(host_config.get("port", target.port))
+    user = host_config.get("user", target.user)
+    identity_file = host_config.get("identityfile", [])
+    
+    Output.debug(f"connecting to {user}@{hostname}:{port}...")
     
     connect_kwargs = {
-        "hostname": target.host,
-        "port": target.port,
-        "username": target.user,
+        "hostname": hostname,
+        "port": port,
+        "username": user,
         "timeout": timeout,
         "banner_timeout": timeout,
         "auth_timeout": timeout,
@@ -676,9 +696,19 @@ def ssh_connect(
         connect_kwargs["look_for_keys"] = False
         connect_kwargs["allow_agent"] = False
     elif key_path:
+        # Explicit key path takes precedence
         connect_kwargs["key_filename"] = key_path
         connect_kwargs["look_for_keys"] = False
         connect_kwargs["allow_agent"] = False
+        Output.debug(f"using key: {key_path}")
+    elif identity_file:
+        # Use identity file from SSH config
+        # Expand ~ in paths
+        expanded_keys = [str(Path(k).expanduser()) for k in identity_file]
+        connect_kwargs["key_filename"] = expanded_keys
+        connect_kwargs["look_for_keys"] = True
+        connect_kwargs["allow_agent"] = True
+        Output.debug(f"using keys from SSH config: {expanded_keys}")
     else:
         # Use default keys and agent
         connect_kwargs["look_for_keys"] = True

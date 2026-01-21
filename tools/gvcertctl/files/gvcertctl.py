@@ -28,7 +28,7 @@ from gvcore import (
     ssh_connect, ssh_exec, confirm, get_ssh_credentials,
 )
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 CERT_CONFIG = GVTOOLS_CONFIG / "certctl"
 PROVIDERS_FILE = CERT_CONFIG / "providers.json"
