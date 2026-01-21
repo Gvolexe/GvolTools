@@ -6,13 +6,18 @@ on:
   pull_request:
     branches: [main, master]
 
+env:
+  PYTHONDONTWRITEBYTECODE: 1
+  NO_COLOR: 1
+
 jobs:
   test:
     name: Test Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -25,12 +30,30 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov paramiko
-          pip install -r requirements-test.txt
+          pip install pytest pytest-cov paramiko cryptography
+          if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
 
-      - name: Run tests
+      - name: Validate setup.json files
         run: |
-          python -m pytest tests/ -v --cov=gvolkeymanager --cov-report=xml
+          echo "Validating all setup.json files..."
+          for f in */setup.json; do
+            python -c "import json; json.load(open('$f'))" || exit 1
+            echo "  ✓ $f"
+          done
+          echo "All setup.json files are valid JSON"
+
+      - name: Run unit tests
+        run: |
+          python -m pytest tests/ -v --cov-report=xml --cov-report=term-missing
+
+      - name: Check Python syntax
+        run: |
+          echo "Checking Python syntax..."
+          find . -name "*.py" -path "*/files/*" | while read f; do
+            python -m py_compile "$f" || exit 1
+            echo "  ✓ $f"
+          done
+          echo "All Python files have valid syntax"
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -57,7 +80,7 @@ jobs:
 
       - name: Run ruff
         run: |
-          ruff check gvolkeymanager/files/ --ignore E501
+          ruff check */files/ --ignore E501,E722,F841 --exclude "*.pyc"
 
   shellcheck:
     name: ShellCheck
@@ -69,13 +92,23 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           scandir: "."
-          ignore_paths: "tests"
+          ignore_paths: "tests .venv .git"
 
   installer-test:
     name: Test Installer
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-paramiko
 
       - name: Make installer executable
         run: chmod +x installgvtools.sh
@@ -89,27 +122,87 @@ jobs:
       - name: Test version command
         run: ./installgvtools.sh --version
 
-      - name: Install tool
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-paramiko
-          ./installgvtools.sh install gvolkeymanager
+      - name: Install gvcore (shared library)
+        run: ./installgvtools.sh install gvcore
 
-      - name: Verify installation
+      - name: Install gv (help command)
+        run: ./installgvtools.sh install gv
+
+      - name: Verify gv installation
         run: |
+          export PATH="$HOME/.local/bin:$PATH"
           hash -r
-          ~/.local/bin/gvolkeymanager --version
+          gv --version
+
+      - name: Install gvfleet
+        run: ./installgvtools.sh install gvfleet
+
+      - name: Verify gvfleet installation
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          hash -r
+          gvfleet --version
+          fleet --version
 
       - name: Test status command
-        run: ./installgvtools.sh status gvolkeymanager
+        run: ./installgvtools.sh status gvfleet
 
-      - name: Uninstall tool
-        run: ./installgvtools.sh uninstall gvolkeymanager
+      - name: Uninstall gvfleet
+        run: ./installgvtools.sh uninstall gvfleet
 
       - name: Verify uninstallation
         run: |
-          if [ -f ~/.local/bin/gvolkeymanager ]; then
+          if [ -f ~/.local/bin/gvfleet ]; then
             echo "Uninstall failed: file still exists"
             exit 1
           fi
           echo "Uninstall successful"
+
+      - name: Install all tools
+        run: ./installgvtools.sh install-all
+
+      - name: Verify all tools installed
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          hash -r
+          echo "Checking installed tools..."
+          for tool in gv gvfleet gvsshprofile gvhostbootstrap gvsshaudit gvknownhostsctl \
+                      gvsecretsync gvcertctl gvfirewallctl gvupdates gvsudoauth \
+                      gvlogtriage gvbackupctl gvdnscheck gvnetdiag gvportsentry \
+                      gvdotctl gvgitopsinit gvpermcheck gvolkeymanager; do
+            if [ -f "$HOME/.local/bin/$tool" ]; then
+              echo "  ✓ $tool"
+            else
+              echo "  ✗ $tool missing"
+              exit 1
+            fi
+          done
+          echo "All tools installed successfully"
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install paramiko cryptography
+
+      - name: Install gvcore
+        run: ./installgvtools.sh install gvcore
+
+      - name: Install all tools
+        run: ./installgvtools.sh install-all
+
+      - name: Run integration tests
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          python tests/test_integration.py

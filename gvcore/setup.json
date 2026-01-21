@@ -1,0 +1,27 @@
+{
+    "tool": "gvcore",
+    "version": "0.5.0",
+    "description": "Shared library for all gvtools (required dependency)",
+    "deps": {
+        "arch": [
+            "python-paramiko"
+        ],
+        "debian": [
+            "python3-paramiko"
+        ]
+    },
+    "install": {
+        "targets": [
+            {
+                "type": "mkdir",
+                "dst": "~/.local/lib/gvtools"
+            },
+            {
+                "type": "copy",
+                "src": "files/gvcore.py",
+                "dst": "~/.local/lib/gvtools/gvcore.py",
+                "chmod": "644"
+            }
+        ]
+    }
+}

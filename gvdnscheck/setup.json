@@ -1,0 +1,41 @@
+{
+    "tool": "gvdnscheck",
+    "version": "0.5.0",
+    "description": "DNS validation and consistency checking",
+    "deps": {
+        "arch": [
+            "bind"
+        ],
+        "debian": [
+            "dnsutils"
+        ]
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvdnscheck.py",
+                "dst": "~/.local/bin/gvdnscheck",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/dns",
+                "target": "~/.local/bin/gvdnscheck"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/dc",
+                "target": "~/.local/bin/gvdnscheck"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gvdns",
+                "target": "~/.local/bin/gvdnscheck"
+            }
+        ]
+    }
+}

@@ -9,22 +9,131 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Create Release
+  validate:
+    name: Validate Release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run tests first
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
         run: |
-          python -m pip install pytest paramiko
+          python -m pip install --upgrade pip
+          pip install pytest paramiko cryptography
+
+      - name: Validate all setup.json files
+        run: |
+          echo "Validating setup.json files..."
+          for f in */setup.json; do
+            python -c "import json; json.load(open('$f'))" || exit 1
+            echo "  ✓ $f"
+          done
+
+      - name: Check version consistency
+        run: |
+          echo "Checking version consistency..."
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "Release tag version: $TAG_VERSION"
+          
+          # Check installer version
+          INSTALLER_VERSION=$(grep 'readonly VERSION=' installgvtools.sh | cut -d'"' -f2)
+          echo "Installer version: $INSTALLER_VERSION"
+          if [ "$INSTALLER_VERSION" != "$TAG_VERSION" ]; then
+            echo "ERROR: Installer version mismatch!"
+            exit 1
+          fi
+          
+          # Check gvcore version
+          GVCORE_VERSION=$(python -c "import json; print(json.load(open('gvcore/setup.json'))['version'])")
+          echo "gvcore version: $GVCORE_VERSION"
+          if [ "$GVCORE_VERSION" != "$TAG_VERSION" ]; then
+            echo "ERROR: gvcore version mismatch!"
+            exit 1
+          fi
+          
+          echo "✓ All versions match $TAG_VERSION"
+
+      - name: Run tests
+        run: |
           python -m pytest tests/ -v
 
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Count tools
+          TOOL_COUNT=$(ls -d */setup.json 2>/dev/null | wc -l)
+          
+          # Get tool list
+          TOOLS=$(for f in */setup.json; do
+            dirname "$f"
+          done | sort | tr '\n' ' ')
+          
+          echo "tool_count=$TOOL_COUNT" >> $GITHUB_OUTPUT
+          echo "tools=$TOOLS" >> $GITHUB_OUTPUT
+
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           draft: false
           prerelease: ${{ contains(github.ref, '-') }}
+          body: |
+            ## GVTools ${{ github.ref_name }}
+            
+            ### Installation
+            
+            ```bash
+            # Clone the repository
+            git clone https://github.com/Gvolexe/GvolTools.git
+            cd GvolTools
+            
+            # Install all tools
+            ./installgvtools.sh install-all --deps
+            
+            # Or install specific tools
+            ./installgvtools.sh install gvfleet --deps
+            ```
+            
+            ### Included Tools (${{ steps.changelog.outputs.tool_count }})
+            
+            - **gv** - Help command and tool dispatcher
+            - **gvfleet** - Host inventory management
+            - **gvsshprofile** - SSH connection profiles
+            - **gvhostbootstrap** - Host security bootstrap
+            - **gvsshaudit** - SSH configuration auditing
+            - **gvknownhostsctl** - known_hosts management
+            - **gvsecretsync** - Encrypted secrets distribution
+            - **gvcertctl** - TLS certificate management (ACME/Cloudflare)
+            - **gvfirewallctl** - Firewall baseline management
+            - **gvupdates** - Security updates management
+            - **gvsudoauth** - Sudo authentication configuration
+            - **gvlogtriage** - Log analysis (SSH, sudo, fail2ban)
+            - **gvbackupctl** - Backup with restic
+            - **gvdnscheck** - DNS validation
+            - **gvnetdiag** - Network diagnostics
+            - **gvportsentry** - Port scanning and baselines
+            - **gvdotctl** - Dotfile management
+            - **gvgitopsinit** - GitOps scaffolding
+            - **gvpermcheck** - Permission auditing
+            - **gvolkeymanager** - SSH key management
+            
+            ### Requirements
+            
+            - Python 3.10+
+            - paramiko (for SSH operations)
+            - cryptography (for secrets encryption)
+            
+            See [documentation](docs/) for detailed usage.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

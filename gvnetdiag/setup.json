@@ -1,0 +1,41 @@
+{
+    "tool": "gvnetdiag",
+    "version": "0.5.0",
+    "description": "Network diagnostics (ping, trace, ports)",
+    "deps": {
+        "arch": [
+            "traceroute"
+        ],
+        "debian": [
+            "traceroute"
+        ]
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvnetdiag.py",
+                "dst": "~/.local/bin/gvnetdiag",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/nd",
+                "target": "~/.local/bin/gvnetdiag"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/netdiag",
+                "target": "~/.local/bin/gvnetdiag"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gvnd",
+                "target": "~/.local/bin/gvnetdiag"
+            }
+        ]
+    }
+}

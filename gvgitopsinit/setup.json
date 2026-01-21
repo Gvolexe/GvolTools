@@ -1,0 +1,41 @@
+{
+    "tool": "gvgitopsinit",
+    "version": "0.5.0",
+    "description": "GitOps repository scaffolding",
+    "deps": {
+        "arch": [
+            "git"
+        ],
+        "debian": [
+            "git"
+        ]
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvgitopsinit.py",
+                "dst": "~/.local/bin/gvgitopsinit",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gi",
+                "target": "~/.local/bin/gvgitopsinit"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gitops",
+                "target": "~/.local/bin/gvgitopsinit"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gvgi",
+                "target": "~/.local/bin/gvgitopsinit"
+            }
+        ]
+    }
+}

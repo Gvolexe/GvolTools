@@ -1,0 +1,32 @@
+{
+    "tool": "gvknownhostsctl",
+    "version": "0.5.0",
+    "description": "Manage ~/.ssh/known_hosts safely",
+    "deps": {
+        "arch": [],
+        "debian": []
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvknownhostsctl.py",
+                "dst": "~/.local/bin/gvknownhostsctl",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/kh",
+                "target": "~/.local/bin/gvknownhostsctl"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gvkh",
+                "target": "~/.local/bin/gvknownhostsctl"
+            }
+        ]
+    }
+}

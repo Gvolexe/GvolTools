@@ -6,7 +6,7 @@
 #
 set -euo pipefail
 
-readonly VERSION="0.3.0"
+readonly VERSION="0.5.0"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT_DIR
 
@@ -80,7 +80,8 @@ ${BOLD}Usage:${RESET}
 
 ${BOLD}Commands:${RESET}
   ${GREEN}list${RESET}                    List available tools
-  ${GREEN}install${RESET} <tool> [--deps] Install a tool
+  ${GREEN}install${RESET} <tool> [--deps] Install a tool (auto-installs requirements)
+  ${GREEN}install-all${RESET} [--deps]    Install all tools
   ${GREEN}uninstall${RESET} <tool>        Remove an installed tool
   ${GREEN}status${RESET} <tool>           Check installation status
 
@@ -91,9 +92,10 @@ ${BOLD}Options:${RESET}
 
 ${BOLD}Examples:${RESET}
   ./installgvtools.sh list
-  ./installgvtools.sh install gvolkeymanager --deps
-  ./installgvtools.sh status gvolkeymanager
-  ./installgvtools.sh uninstall gvolkeymanager
+  ./installgvtools.sh install gvfleet --deps
+  ./installgvtools.sh install-all --deps
+  ./installgvtools.sh status gvfleet
+  ./installgvtools.sh uninstall gvfleet
 
 ${DIM}Author: Gvol (gvol@nexusystems.org)${RESET}
 EOF
@@ -221,6 +223,20 @@ do_install() {
     local platform
     platform="$(detect_platform)"
     
+    # Check and install required dependencies (other tools)
+    local requires
+    requires=$(python3 -c "import json; d=json.load(open('$tool_dir/setup.json')); print(' '.join(d.get('requires', [])))" 2>/dev/null || echo "")
+    
+    if [[ -n "$requires" ]]; then
+        for req in $requires; do
+            local req_dir="$ROOT_DIR/$req"
+            if [[ -d "$req_dir" ]] && [[ -f "$req_dir/setup.json" ]]; then
+                msg_info "Installing required dependency: $req"
+                do_install "$req" "$with_deps"
+            fi
+        done
+    fi
+    
     header "Installing $tool"
     
     if [[ "$with_deps" == "true" ]]; then
@@ -232,6 +248,7 @@ do_install() {
         case "$action" in
             copy) msg_success "Installed: ${CYAN}$detail${RESET}" ;;
             link) msg_success "Linked: ${CYAN}$detail${RESET}" ;;
+            mkdir) msg_success "Created: ${CYAN}$detail${RESET}" ;;
             skip) msg_warn "Skipped: $detail" ;;
             error) msg_error "$detail"; exit 1 ;;
         esac
@@ -291,6 +308,14 @@ for t in targets:
         link.symlink_to(target)
         print(f"link|{link} -> {target}")
     
+    elif ttype == "mkdir":
+        path = expand(t["path"])
+        path.mkdir(parents=True, exist_ok=True)
+        chmod = t.get("chmod")
+        if chmod:
+            os.chmod(path, int(chmod, 8))
+        print(f"mkdir|{path}")
+    
     else:
         print(f"error|unknown target type: {ttype}")
         sys.exit(1)
@@ -315,6 +340,49 @@ PY
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Install All
+# ─────────────────────────────────────────────────────────────────────────────
+
+do_install_all() {
+    local with_deps="${1:-false}"
+    
+    header "Installing All GVTools"
+    
+    # Track installed to avoid duplicates from requires
+    declare -A installed
+    
+    # Install order: gvcore first (no requires), then gv, then others
+    local install_order=("gvcore" "gv")
+    
+    for setup_file in "$ROOT_DIR"/*/setup.json; do
+        [[ -f "$setup_file" ]] || continue
+        local tool_name
+        tool_name="$(basename "$(dirname "$setup_file")")"
+        
+        # Skip already in order
+        [[ "$tool_name" == "gvcore" || "$tool_name" == "gv" ]] && continue
+        install_order+=("$tool_name")
+    done
+    
+    for tool in "${install_order[@]}"; do
+        if [[ -z "${installed[$tool]:-}" ]]; then
+            local tool_dir="$ROOT_DIR/$tool"
+            if [[ -d "$tool_dir" ]] && [[ -f "$tool_dir/setup.json" ]]; then
+                echo
+                msg_info "Installing: $tool"
+                do_install "$tool" "$with_deps"
+                installed[$tool]=1
+            fi
+        fi
+    done
+    
+    echo
+    header "Installation Complete"
+    msg_success "All tools installed!"
+    msg_info "Run ${CYAN}gv${RESET} to see available commands"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Uninstall
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -330,6 +398,7 @@ do_uninstall() {
     while IFS='|' read -r action detail; do
         case "$action" in
             remove) msg_success "Removed: ${CYAN}$detail${RESET}" ;;
+            rmdir) msg_success "Removed dir: ${CYAN}$detail${RESET}" ;;
             none) msg_info "$detail" ;;
         esac
     done < <(py "$tool_dir" <<'PY'
@@ -360,6 +429,9 @@ for t in targets:
             link.unlink()
             print(f"remove|{link}")
             removed += 1
+    elif t.get("type") == "mkdir":
+        path = expand(t["path"])
+        # Don't remove directories as they may contain user data
 
 if removed == 0:
     print("none|Nothing to remove")
@@ -437,6 +509,13 @@ for t in targets:
         print(f"{status}|link|{link}")
         if not installed:
             all_installed = False
+    elif t.get("type") == "mkdir":
+        path = expand(t["path"])
+        installed = path.exists() and path.is_dir()
+        status = "ok" if installed else "missing"
+        print(f"{status}|mkdir|{path}")
+        if not installed:
+            all_installed = False
 
 if all_installed:
     print("result|installed|")
@@ -469,6 +548,14 @@ main() {
             done
             
             do_install "$tool" "$with_deps"
+            ;;
+        install-all)
+            local with_deps="false"
+            for arg in "${@:2}"; do
+                [[ "$arg" == "--deps" ]] && with_deps="true"
+            done
+            
+            do_install_all "$with_deps"
             ;;
         uninstall)
             local tool="${2:-}"

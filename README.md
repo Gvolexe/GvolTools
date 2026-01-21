@@ -1,68 +1,120 @@
-# gvoltools
+# GVTools
 
 [![CI](https://github.com/Gvolexe/GvolTools/actions/workflows/ci.yml/badge.svg)](https://github.com/Gvolexe/GvolTools/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.3.0-green.svg)](https://github.com/Gvolexe/GvolTools/releases)
+[![Version](https://img.shields.io/badge/version-0.5.0-green.svg)](https://github.com/Gvolexe/GvolTools/releases)
 
-A collection of small, focused utilities with a consistent structure and JSON-driven installer.
+**Infrastructure Management Toolkit** — A comprehensive collection of CLI utilities for managing SSH-based server infrastructure.
 
 **Author:** Gvol ([gvol@nexusystems.org](mailto:gvol@nexusystems.org))
 
 ## Features
 
-- 🔐 **Secure server setup** — Disable root login, password auth, configure sudo via SSH key
-- 🔑 **SSH key management** — Registry system for managing multiple keys
-- ⚙️ **Preferences** — Save defaults so you don't have to repeat arguments
-- 🎨 **Beautiful CLI** — Colorful, informative output with clear status messages
-- 📦 **JSON-driven installer** — Easy to extend with new tools
+- 🔐 **Security** — Host hardening, SSH auditing, secrets management
+- 🔑 **SSH** — Key management, connection profiles, known_hosts control
+- 📊 **Monitoring** — Log analysis, DNS checks, network diagnostics
+- ⚙️ **Automation** — Host inventory, target selection, JSON output
+- 🎨 **Beautiful CLI** — Colorful, consistent output across all tools
 
 ---
 
 ## Quick Start
 
 ```bash
+# Clone the repository
 git clone https://github.com/Gvolexe/GvolTools.git
 cd GvolTools
-./installgvtools.sh list
-./installgvtools.sh install gvolkeymanager --deps
+
+# Install all tools
+./installgvtools.sh install-all --deps
+
+# See what's available
+gv
+
+# Get help for a specific tool
+gv help fleet
 ```
 
 ### PATH Setup
 
-Tools are installed to `~/.local/bin`. Add this directory to your PATH:
-
-**Bash** (`~/.bashrc`):
+Tools are installed to `~/.local/bin`. Add to your PATH if needed:
 
 ```bash
+# Add to ~/.bashrc or ~/.zshrc
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-**Zsh** (`~/.zshrc`):
+## Available Tools (20)
+
+### Inventory & Profiles
+
+| Tool           | Aliases  | Description                  |
+| -------------- | -------- | ---------------------------- |
+| **gv**         | gvtools  | Help and command dispatcher  |
+| **gvfleet**    | fleet, f | Host inventory management    |
+| **gvsshprofile** | sp     | SSH connection profiles      |
+
+### Security & Hardening
+
+| Tool              | Aliases     | Description                   |
+| ----------------- | ----------- | ----------------------------- |
+| **gvhostbootstrap** | hb        | Initial host bootstrap        |
+| **gvsshaudit**    | sa          | SSH configuration auditing    |
+| **gvknownhostsctl** | kh        | known_hosts management        |
+| **gvsecretsync**  | sec, secrets | Encrypted secrets sync       |
+| **gvfirewallctl** | fw          | Firewall baselines            |
+| **gvsudoauth**    | su          | Sudo authentication config    |
+| **gvpermcheck**   | pc, perm    | Permission auditing           |
+| **gvolkeymanager** | keyup, keyconf | SSH key management        |
+
+### Certificates & Updates
+
+| Tool          | Aliases    | Description                  |
+| ------------- | ---------- | ---------------------------- |
+| **gvcertctl** | cert, cc   | TLS certs (ACME/Cloudflare)  |
+| **gvupdates** | upd        | Security update management   |
+
+### Monitoring & Diagnostics
+
+| Tool           | Aliases     | Description               |
+| -------------- | ----------- | ------------------------- |
+| **gvlogtriage** | lt         | Log analysis              |
+| **gvdnscheck** | dns, dc     | DNS validation            |
+| **gvnetdiag**  | nd          | Network diagnostics       |
+| **gvportsentry** | ps, ports | Port scanning/baselines   |
+
+### Configuration & DevOps
+
+| Tool           | Aliases   | Description           |
+| -------------- | --------- | --------------------- |
+| **gvdotctl**   | dt, dot   | Dotfile management    |
+| **gvgitopsinit** | gi      | GitOps scaffolding    |
+| **gvbackupctl** | bk       | Backup with restic    |
+
+## Target Selection
+
+All tools support consistent target selection:
 
 ```bash
-export PATH="$HOME/.local/bin:$PATH"
+# Direct target
+gvfleet ssh admin@server.example.com
+
+# From inventory
+gvfleet ssh --targets "web*"
+
+# By attributes  
+gvfleet ssh --env production --role webserver
 ```
 
-**Fish** (`~/.config/fish/config.fish`):
+## Common Flags
 
-```fish
-fish_add_path ~/.local/bin
-```
-
-After editing, restart your shell or run `source ~/.bashrc` (or equivalent).
-
-## Available Tools
-
-| Tool                                     | Version | Description                                           |
-| ---------------------------------------- | ------- | ----------------------------------------------------- |
-| [gvolkeymanager](docs/gvolkeymanager.md) | 0.3.0   | SSH key upload, registry & secure server setup        |
-
-### gvolkeymanager Highlights
-
-- **`keyup`** — Upload SSH keys to servers with optional security hardening
-- **`keyconf`** — Manage local registry of SSH keys and preferences
-- **Secure setup** — Creates users, disables root login, enables sudo via SSH key
-- **Preferences** — Save default username, key, and security settings
+| Flag             | Description              |
+| ---------------- | ------------------------ |
+| `--dry-run`      | Preview without applying |
+| `--json`         | JSON output for scripts  |
+| `--verbose`      | Verbose output           |
+| `--yes`          | Skip confirmations       |
+| `--strict-hostkey` | Require known hosts    |
 
 ## Installer Usage
 
@@ -71,75 +123,51 @@ After editing, restart your shell or run `source ~/.bashrc` (or equivalent).
 
 Commands:
   list                    List available tools
-  install <tool> [--deps] Install a tool (--deps installs system packages)
-  uninstall <tool>        Remove an installed tool
-  status <tool>           Check if a tool is installed
-  --help, -h              Show help message
-  --version               Show version
+  install <tool> [--deps] Install a tool
+  install-all [--deps]    Install all tools
+  uninstall <tool>        Remove a tool
+  status <tool>           Check installation status
 ```
 
-## Adding Your Own Tools
+## Architecture
 
-1. Create the structure:
-
-   ```bash
-   mkdir -p mytool/files
-   ```
-
-2. Add `mytool/setup.json`:
-
-   ```json
-   {
-     "tool": "mytool",
-     "version": "0.1.0",
-     "description": "What it does",
-     "deps": {
-       "arch": [],
-       "debian": []
-     },
-     "install": {
-       "targets": [
-         {
-           "type": "copy",
-           "src": "files/mytool",
-           "dst": "~/.local/bin/mytool",
-           "chmod": "755"
-         }
-       ]
-     }
-   }
-   ```
-
-3. Add your files to `mytool/files/`
-
-4. Install and test:
-   ```bash
-   ./installgvtools.sh install mytool
-   ```
+```
+~/.local/bin/              # Tool executables + alias symlinks
+~/.local/lib/gvtools/      # Shared library (gvcore.py)
+~/.config/gvtools/         # Configuration data
+    ├── inventory.json     # Host inventory
+    ├── sshprofiles.json   # SSH profiles
+    ├── secrets/           # Encrypted secrets
+    └── certctl/           # Certificate configs
+```
 
 ## Documentation
 
-- [gvolkeymanager](docs/gvolkeymanager.md) — Full usage guide with security features
+See [docs/](docs/) for detailed documentation on each tool:
+
+- [docs/README.md](docs/README.md) — Documentation index
+- [OVERVIEW.md](OVERVIEW.md) — Architecture overview
+
+## Requirements
+
+- **Python 3.10+**
+- **paramiko** — SSH connections
+- **cryptography** — Secrets encryption (optional)
+- **certbot** — Certificate management (optional)
+- **restic** — Backups (optional)
 
 ## Development
 
-### Running Tests
-
 ```bash
-# Run all tests
+# Run tests
 python3 -m pytest tests/ -v
 
-# Run with coverage
-python3 -m pytest tests/ -v --cov=gvolkeymanager
+# Run integration tests
+python3 tests/test_integration.py
+
+# Install single tool for testing
+./installgvtools.sh install gvfleet
 ```
-
-### Code Style
-
-This project follows standard Python conventions. Use meaningful variable names, add docstrings to functions, and keep functions focused.
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
 
 ## Contributing
 
@@ -148,6 +176,10 @@ MIT License - see [LICENSE](LICENSE) for details.
 3. Make your changes
 4. Run tests
 5. Submit a pull request
+
+## License
+
+MIT License — see [LICENSE](LICENSE)
 
 ---
 

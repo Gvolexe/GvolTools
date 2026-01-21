@@ -1,0 +1,32 @@
+{
+    "tool": "gvsshprofile",
+    "version": "0.5.0",
+    "description": "SSH connection profiles and config generation",
+    "deps": {
+        "arch": [],
+        "debian": []
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvsshprofile.py",
+                "dst": "~/.local/bin/gvsshprofile",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/sp",
+                "target": "~/.local/bin/gvsshprofile"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gvsp",
+                "target": "~/.local/bin/gvsshprofile"
+            }
+        ]
+    }
+}
