@@ -1,6 +1,6 @@
 {
     "tool": "gvbackupctl",
-    "version": "1.2.5",
+    "version": "1.2.6",
     "description": "Backup configuration and verification (restic)",
     "deps": {
         "arch": [

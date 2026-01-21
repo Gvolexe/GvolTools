@@ -647,8 +647,14 @@ def ssh_connect(
     key_path: str = "",
     strict_hostkey: bool = False,
     timeout: int = 15,
+    forward_agent: bool | None = None,
 ) -> "paramiko.SSHClient":
-    """Establish SSH connection."""
+    """Establish SSH connection.
+    
+    Args:
+        forward_agent: If None, uses SSH config ForwardAgent setting. 
+                       If True/False, overrides config.
+    """
     check_paramiko()
     
     client = paramiko.SSHClient()
@@ -680,7 +686,16 @@ def ssh_connect(
     user = host_config.get("user", target.user)
     identity_file = host_config.get("identityfile", [])
     
+    # Check ForwardAgent from config if not explicitly set
+    if forward_agent is None:
+        forward_agent_cfg = host_config.get("forwardagent", "no").lower()
+        forward_agent = forward_agent_cfg in ("yes", "true", "1")
+    
+    # Store forward_agent setting on client for ssh_exec to use
+    client._gvtools_forward_agent = forward_agent
+    
     Output.debug(f"target: {user}@{hostname}:{port}")
+    Output.debug(f"agent forwarding: {forward_agent}")
     
     connect_kwargs = {
         "hostname": hostname,
@@ -740,23 +755,76 @@ def ssh_exec(
     sudo: bool = False,
     password: str = "",
 ) -> tuple[int, str, str]:
-    """Execute command on remote host."""
-    Output.debug(f"executing command (sudo={sudo})...")
+    """Execute command on remote host.
     
+    When sudo=True and agent forwarding is enabled, uses SSH agent auth for sudo.
+    Otherwise falls back to password-based sudo.
+    """
+    import paramiko.agent
+    
+    forward_agent = getattr(client, "_gvtools_forward_agent", False)
+    Output.debug(f"executing command (sudo={sudo}, forward_agent={forward_agent})...")
+    
+    # Get transport for the channel
+    transport = client.get_transport()
+    channel = transport.open_session()
+    
+    # Request agent forwarding if enabled
+    if forward_agent:
+        try:
+            paramiko.agent.AgentRequestHandler(channel)
+            Output.debug("SSH agent forwarding enabled on channel")
+        except Exception as e:
+            Output.debug(f"could not enable agent forwarding: {e}")
+    
+    # Request PTY for sudo
     if sudo:
-        cmd = f"sudo -S -p '' sh -lc {shlex.quote(command)}"
-        stdin, stdout, stderr = client.exec_command(cmd, get_pty=True)
-        if password:
-            stdin.write(password + "\n")
-            stdin.flush()
+        channel.get_pty()
+    
+    # Build command
+    if sudo:
+        if forward_agent and not password:
+            # Use SSH agent for sudo auth (pam_ssh_agent_auth)
+            # -A uses SUDO_ASKPASS (won't work here), so we just run sudo
+            # and rely on pam_ssh_agent_auth reading from forwarded agent
+            cmd = f"sudo sh -lc {shlex.quote(command)}"
+            Output.debug("using SSH agent for sudo authentication")
+        else:
+            # Use password-based sudo
+            cmd = f"sudo -S -p '' sh -lc {shlex.quote(command)}"
     else:
         cmd = f"sh -lc {shlex.quote(command)}"
-        stdin, stdout, stderr = client.exec_command(cmd)
+    
+    channel.exec_command(cmd)
+    
+    # Send password if needed
+    if sudo and password:
+        channel.sendall(password + "\n")
     
     Output.debug("waiting for command output...")
-    exit_code = stdout.channel.recv_exit_status()
-    out = stdout.read().decode(errors="replace")
-    err = stderr.read().decode(errors="replace")
+    
+    # Read output
+    stdout_data = b""
+    stderr_data = b""
+    
+    while True:
+        if channel.recv_ready():
+            stdout_data += channel.recv(4096)
+        if channel.recv_stderr_ready():
+            stderr_data += channel.recv_stderr(4096)
+        if channel.exit_status_ready():
+            # Drain remaining data
+            while channel.recv_ready():
+                stdout_data += channel.recv(4096)
+            while channel.recv_stderr_ready():
+                stderr_data += channel.recv_stderr(4096)
+            break
+    
+    exit_code = channel.recv_exit_status()
+    channel.close()
+    
+    out = stdout_data.decode(errors="replace")
+    err = stderr_data.decode(errors="replace")
     
     Output.debug(f"command completed with exit code {exit_code}")
     return exit_code, out, err

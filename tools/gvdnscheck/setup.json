@@ -1,6 +1,6 @@
 {
     "tool": "gvdnscheck",
-    "version": "1.2.5",
+    "version": "1.2.6",
     "description": "DNS validation and consistency checking",
     "deps": {
         "arch": [

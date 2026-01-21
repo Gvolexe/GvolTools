@@ -1,6 +1,6 @@
 {
     "tool": "gvcore",
-    "version": "1.2.5",
+    "version": "1.2.6",
     "description": "Shared library for all gvtools (required dependency)",
     "deps": {
         "arch": [
