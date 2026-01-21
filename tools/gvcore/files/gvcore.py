@@ -769,51 +769,68 @@ def local_exec(command: str, capture: bool = True) -> tuple[int, str, str]:
 # Common CLI Patterns
 # ─────────────────────────────────────────────────────────────────────────────
 
+
+def _has_argument(parser: argparse.ArgumentParser, *names: str) -> bool:
+    """Check if parser already has any of the given argument names."""
+    existing = set()
+    for action in parser._actions:
+        existing.update(action.option_strings)
+    return any(name in existing for name in names)
+
+
 def add_common_args(parser: argparse.ArgumentParser) -> None:
-    """Add common arguments to parser."""
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="show what would happen without making changes",
-    )
-    parser.add_argument(
-        "--json",
-        action="store_true",
-        dest="json_output",
-        help="output in JSON format",
-    )
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="verbose output",
-    )
-    parser.add_argument(
-        "--timeout",
-        type=int,
-        default=15,
-        help="connection timeout in seconds (default: 15)",
-    )
-    parser.add_argument(
-        "--yes", "-y",
-        action="store_true",
-        help="non-interactive mode, assume yes",
-    )
-    parser.add_argument(
-        "--strict-hostkey",
-        action="store_true",
-        help="reject unknown SSH host keys",
-    )
-    parser.add_argument(
-        "-i", "--key",
-        dest="key_path",
-        help="path to SSH private key",
-    )
-    parser.add_argument(
-        "-p", "--password",
-        action="store_true",
-        dest="ask_password",
-        help="prompt for SSH password",
-    )
+    """Add common arguments to parser (skips if already defined)."""
+    if not _has_argument(parser, "--dry-run"):
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="show what would happen without making changes",
+        )
+    if not _has_argument(parser, "--json"):
+        parser.add_argument(
+            "--json",
+            action="store_true",
+            dest="json_output",
+            help="output in JSON format",
+        )
+    if not _has_argument(parser, "-v", "--verbose"):
+        parser.add_argument(
+            "-v", "--verbose",
+            action="store_true",
+            help="verbose output",
+        )
+    if not _has_argument(parser, "--timeout"):
+        parser.add_argument(
+            "--timeout",
+            type=int,
+            default=15,
+            help="connection timeout in seconds (default: 15)",
+        )
+    if not _has_argument(parser, "--yes", "-y"):
+        parser.add_argument(
+            "--yes", "-y",
+            action="store_true",
+            help="non-interactive mode, assume yes",
+        )
+    if not _has_argument(parser, "--strict-hostkey"):
+        parser.add_argument(
+            "--strict-hostkey",
+            action="store_true",
+            help="reject unknown SSH host keys",
+        )
+    if not _has_argument(parser, "-i", "--key"):
+        parser.add_argument(
+            "-i", "--key",
+            dest="key_path",
+            help="path to SSH private key",
+        )
+    if not _has_argument(parser, "-p", "--password"):
+        parser.add_argument(
+            "-p", "--password",
+            action="store_true",
+            dest="ask_password",
+            help="prompt for SSH password",
+        )
 
 
 def get_ssh_credentials(args: argparse.Namespace) -> tuple[str, str]:
@@ -829,46 +846,55 @@ def get_ssh_credentials(args: argparse.Namespace) -> tuple[str, str]:
 
 
 def add_target_args(parser: argparse.ArgumentParser) -> None:
-    """Add target selection arguments to parser."""
+    """Add target selection arguments to parser (skips if already defined)."""
     group = parser.add_argument_group("target selection")
-    group.add_argument(
-        "target",
-        nargs="?",
-        help="direct target: user@host[:port] or hostname",
-    )
-    group.add_argument(
-        "--host",
-        help="select by hostname pattern",
-    )
-    group.add_argument(
-        "--tag",
-        help="select by tag",
-    )
-    group.add_argument(
-        "--role",
-        help="select by role",
-    )
-    group.add_argument(
-        "--env",
-        choices=["prod", "staging", "dev"],
-        help="select by environment",
-    )
-    group.add_argument(
-        "--domain",
-        help="select by domain suffix",
-    )
-    group.add_argument(
-        "--group",
-        help="select by group",
-    )
-    group.add_argument(
-        "--targets",
-        help="glob pattern for hostnames",
-    )
-    group.add_argument(
-        "--file",
-        help="file containing list of hosts",
-    )
+    if not _has_argument(parser, "target"):
+        group.add_argument(
+            "target",
+            nargs="?",
+            help="direct target: user@host[:port] or hostname",
+        )
+    if not _has_argument(parser, "--host"):
+        group.add_argument(
+            "--host",
+            help="select by hostname pattern",
+        )
+    if not _has_argument(parser, "--tag"):
+        group.add_argument(
+            "--tag",
+            help="select by tag",
+        )
+    if not _has_argument(parser, "--role"):
+        group.add_argument(
+            "--role",
+            help="select by role",
+        )
+    if not _has_argument(parser, "--env"):
+        group.add_argument(
+            "--env",
+            choices=["prod", "staging", "dev"],
+            help="select by environment",
+        )
+    if not _has_argument(parser, "--domain"):
+        group.add_argument(
+            "--domain",
+            help="select by domain suffix",
+        )
+    if not _has_argument(parser, "--group"):
+        group.add_argument(
+            "--group",
+            help="select by group",
+        )
+    if not _has_argument(parser, "--targets"):
+        group.add_argument(
+            "--targets",
+            help="glob pattern for hostnames",
+        )
+    if not _has_argument(parser, "--file"):
+        group.add_argument(
+            "--file",
+            help="file containing list of hosts",
+        )
 
 
 def get_selector_from_args(args: argparse.Namespace) -> TargetSelector:

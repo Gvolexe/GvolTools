@@ -90,7 +90,7 @@ TOOLS = {
         "category": "System",
     },
     "gvsudoauth": {
-        "aliases": ["su", "sudoauth", "gvsu"],
+        "aliases": ["sudoauth", "gvsu"],
         "description": "Sudo authentication config",
         "commands": ["status", "enable-agent", "disable-agent", "enable-nopasswd", "disable-nopasswd"],
         "category": "Security",
@@ -102,7 +102,7 @@ TOOLS = {
         "category": "Monitoring",
     },
     "gvbackupctl": {
-        "aliases": ["bk", "backup", "gvbk"],
+        "aliases": ["bk", "gvbk"],
         "description": "Backup configuration and verification",
         "commands": ["init", "run", "verify", "status", "restore"],
         "category": "Backup",

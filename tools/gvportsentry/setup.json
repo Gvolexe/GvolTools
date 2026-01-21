@@ -1,6 +1,6 @@
 {
     "tool": "gvportsentry",
-    "version": "1.2.2",
+    "version": "1.2.3",
     "description": "Port scanning and baseline comparison",
     "deps": {
         "arch": [],
