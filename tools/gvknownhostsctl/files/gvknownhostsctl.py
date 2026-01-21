@@ -26,7 +26,7 @@ from gvcore import (
     add_common_args, apply_common_args, confirm,
 )
 
-__version__ = "1.1.3"
+__version__ = "1.1.4"
 
 KNOWN_HOSTS = Path.home() / ".ssh" / "known_hosts"
 

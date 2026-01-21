@@ -25,7 +25,7 @@ from gvcore import (
     ssh_connect, ssh_exec,
 )
 
-__version__ = "1.1.3"
+__version__ = "1.1.4"
 
 
 STATUS_SCRIPT = """
