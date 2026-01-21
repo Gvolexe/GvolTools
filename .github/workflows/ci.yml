@@ -56,11 +56,12 @@ jobs:
           echo "All Python files have valid syntax"
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         if: matrix.python-version == '3.12'
         with:
           files: coverage.xml
           fail_ci_if_error: false
+        continue-on-error: true
 
   lint:
     name: Lint
