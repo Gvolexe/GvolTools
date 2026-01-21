@@ -1,6 +1,6 @@
 # GVTools Overview
 
-**Version 0.5.0** - Infrastructure Management Toolkit
+**Infrastructure Management Toolkit**
 
 GVTools is a comprehensive collection of command-line utilities for managing SSH-based server infrastructure, developed with a focus on security, automation, and operator experience.
 

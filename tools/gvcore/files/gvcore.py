@@ -30,7 +30,7 @@ try:
 except ImportError:
     paramiko = None
 
-__version__ = "1.2.81"
+__version__ = "1.2.82"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # XDG Paths
@@ -874,15 +874,27 @@ def ssh_exec(
     
     Output.debug("waiting for command output...")
     
-    # Read output
+    # Read output with timeout
+    import time
     stdout_data = b""
     stderr_data = b""
+    timeout = 60  # 60 second timeout for command completion
+    start_time = time.time()
     
     while True:
+        # Check for timeout
+        elapsed = time.time() - start_time
+        if elapsed > timeout:
+            Output.debug(f"command timed out after {timeout}s")
+            channel.close()
+            return 124, stdout_data.decode(errors="replace"), "Command timed out (sudo may be waiting for password)"
+        
         if channel.recv_ready():
             stdout_data += channel.recv(4096)
+            start_time = time.time()  # Reset timeout on activity
         if channel.recv_stderr_ready():
             stderr_data += channel.recv_stderr(4096)
+            start_time = time.time()  # Reset timeout on activity
         if channel.exit_status_ready():
             # Drain remaining data
             while channel.recv_ready():
@@ -890,6 +902,9 @@ def ssh_exec(
             while channel.recv_stderr_ready():
                 stderr_data += channel.recv_stderr(4096)
             break
+        
+        # Small sleep to avoid busy waiting
+        time.sleep(0.01)
     
     exit_code = channel.recv_exit_status()
     channel.close()

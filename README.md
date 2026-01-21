@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Gvolexe/GvolTools/actions/workflows/ci.yml/badge.svg)](https://github.com/Gvolexe/GvolTools/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.5.0-green.svg)](https://github.com/Gvolexe/GvolTools/releases)
+[![Version](https://img.shields.io/github/v/release/Gvolexe/GvolTools?color=green&label=version)](https://github.com/Gvolexe/GvolTools/releases)
 
 **Infrastructure Management Toolkit** — A comprehensive collection of CLI utilities for managing SSH-based server infrastructure.
 
