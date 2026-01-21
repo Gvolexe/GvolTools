@@ -132,7 +132,7 @@ def cmd_list(args: argparse.Namespace) -> None:
         return
     
     if not hosts:
-        Output.info("No hosts found")
+        Output.info("No hosts in inventory. Add one with: gvfleet add <host> --user <user>")
         return
     
     Output.header(f"Inventory ({len(hosts)} hosts)")
