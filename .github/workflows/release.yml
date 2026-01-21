@@ -269,8 +269,9 @@ jobs:
             $tool --help || { echo "FAIL: $tool"; FAILED=1; }
           done
 
-          # Test all aliases work (excluding su/backup which conflict with system commands)
-          ALIASES="fleet f gvf sp gvsp hb gvhb sa sshaudit gvsa kh gvkh sec secrets gvs cert gvcert fw gvfw upd gvu sudoauth gvsu lt logtriage gvlt bk gvbk dns dc gvdns nd netdiag gvnd ports gvps dt dot gvdt gi gitops gvgi pc perm gvpc km gvkm health hl metrics mx tcp tc jrnl j dep run sync sx sd svc reboot rb pol pl dnsprov dp render rr ngx nx"
+          # Test all aliases work (excluding those that conflict with system commands)
+          # Conflicts: su, tc (traffic control), j, run, sync, sd, reboot, pl
+          ALIASES="fleet f gvf sp gvsp hb gvhb sa sshaudit gvsa kh gvkh sec secrets gvs cert gvcert fw gvfw upd gvu sudoauth gvsu lt logtriage gvlt bk gvbk dns dc gvdns nd netdiag gvnd ports gvps dt dot gvdt gi gitops gvgi pc perm gvpc km gvkm health hl metrics mx tcp jrnl dep sx svc rb pol dnsprov dp render rr ngx nx"
 
           for alias in $ALIASES; do
             echo "Testing alias: $alias --help"
