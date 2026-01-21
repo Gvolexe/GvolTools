@@ -191,9 +191,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get version from tag
+      - name: Get version
         id: version
-        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: |
+          # For PRs, get version from gvcore.py; for tags, use the tag
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' tools/gvcore/files/gvcore.py)
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          fi
 
       - name: Install build dependencies
         run: |
@@ -210,8 +217,9 @@ jobs:
       - name: Update PKGBUILD version
         run: |
           cd packaging/aur
-          sed -i "s/^pkgver=.*/pkgver=${{ steps.version.outputs.version }}/" PKGBUILD
-          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          VERSION="${{ steps.version.outputs.version }}"
+          sed -i "s|^pkgver=.*|pkgver=$VERSION|" PKGBUILD
+          sed -i "s|^pkgrel=.*|pkgrel=1|" PKGBUILD
 
       - name: Build package
         run: |
@@ -279,8 +287,9 @@ jobs:
       - name: Update PKGBUILD version
         run: |
           cd packaging/aur
-          sed -i "s/^pkgver=.*/pkgver=${{ steps.version.outputs.version }}/" PKGBUILD
-          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          VERSION="${{ steps.version.outputs.version }}"
+          sed -i "s|^pkgver=.*|pkgver=$VERSION|" PKGBUILD
+          sed -i "s|^pkgrel=.*|pkgrel=1|" PKGBUILD
 
       - name: Prepare PKGBUILD for git package
         run: |
