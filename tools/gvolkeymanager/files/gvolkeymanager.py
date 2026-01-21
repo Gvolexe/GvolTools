@@ -518,55 +518,94 @@ fi
     setup_sudo_key_cmd = ""
     if setup_sudo_key:
         setup_sudo_key_cmd = """
-# Install libpam-ssh-agent-auth if not present (Debian/Ubuntu)
+# Install pam_ssh_agent_auth
+PAM_MODULE_INSTALLED=0
+
+# Debian/Ubuntu
 if command -v apt-get >/dev/null 2>&1; then
-    if ! dpkg -l libpam-ssh-agent-auth 2>/dev/null | grep -q "^ii"; then
+    if dpkg -l libpam-ssh-agent-auth 2>/dev/null | grep -q "^ii"; then
+        PAM_MODULE_INSTALLED=1
+    else
         export DEBIAN_FRONTEND=noninteractive
-        apt-get update -qq
-        apt-get install -y -qq libpam-ssh-agent-auth >/dev/null 2>&1 || true
+        apt-get update -qq 2>/dev/null
+        if apt-get install -y -qq libpam-ssh-agent-auth 2>/dev/null; then
+            PAM_MODULE_INSTALLED=1
+            echo "OK: installed libpam-ssh-agent-auth"
+        else
+            echo "WARN: libpam-ssh-agent-auth not available in repos"
+        fi
     fi
 fi
 
 # Arch Linux
 if command -v pacman >/dev/null 2>&1; then
-    if ! pacman -Q pam_ssh_agent_auth 2>/dev/null; then
-        pacman -S --noconfirm pam_ssh_agent_auth 2>/dev/null || true
-    fi
-fi
-
-# Set up sudo authorized keys directory
-SUDO_AUTH_DIR="/etc/security/sudo_authorized_keys"
-install -d -m 0755 "$SUDO_AUTH_DIR"
-
-# Create per-user sudo key file
-SUDO_KEY_FILE="$SUDO_AUTH_DIR/$TARGET_USER"
-install -m 0644 -o root -g root /dev/null "$SUDO_KEY_FILE"
-echo "$KEY" > "$SUDO_KEY_FILE"
-echo "OK: installed sudo key for $TARGET_USER"
-
-# Configure PAM for sudo
-PAM_SUDO="/etc/pam.d/sudo"
-PAM_LINE="auth sufficient pam_ssh_agent_auth.so file=/etc/security/sudo_authorized_keys/%u"
-
-if [ -f "$PAM_SUDO" ]; then
-    if ! grep -qF "pam_ssh_agent_auth" "$PAM_SUDO"; then
-        # Add PAM line before @include common-auth
-        if grep -q "@include common-auth" "$PAM_SUDO"; then
-            sed -i "/@include common-auth/i $PAM_LINE" "$PAM_SUDO"
-        else
-            # Add at the beginning after any initial comments
-            sed -i "1a $PAM_LINE" "$PAM_SUDO"
+    if pacman -Q pam_ssh_agent_auth 2>/dev/null; then
+        PAM_MODULE_INSTALLED=1
+    else
+        if pacman -S --noconfirm pam_ssh_agent_auth 2>/dev/null; then
+            PAM_MODULE_INSTALLED=1
+            echo "OK: installed pam_ssh_agent_auth"
         fi
-        echo "OK: configured PAM for sudo key auth"
     fi
 fi
 
-# Ensure SSH_AUTH_SOCK is preserved by sudo
-SUDOERS_DROP="/etc/sudoers.d/ssh_auth_sock"
-if [ ! -f "$SUDOERS_DROP" ]; then
-    echo 'Defaults env_keep += "SSH_AUTH_SOCK"' > "$SUDOERS_DROP"
-    chmod 440 "$SUDOERS_DROP"
-    echo "OK: configured sudo to preserve SSH_AUTH_SOCK"
+# Check if PAM module exists in filesystem
+if [ "$PAM_MODULE_INSTALLED" = "0" ]; then
+    for p in /lib/security/pam_ssh_agent_auth.so /lib/x86_64-linux-gnu/security/pam_ssh_agent_auth.so /usr/lib/security/pam_ssh_agent_auth.so; do
+        if [ -f "$p" ]; then
+            PAM_MODULE_INSTALLED=1
+            break
+        fi
+    done
+fi
+
+if [ "$PAM_MODULE_INSTALLED" = "0" ]; then
+    echo "WARN: pam_ssh_agent_auth module not available - sudo will require password"
+    echo "WARN: install manually: apt install libpam-ssh-agent-auth (or from source)"
+else
+    # Set up sudo authorized keys directory
+    SUDO_AUTH_DIR="/etc/security/sudo_authorized_keys"
+    install -d -m 0755 "$SUDO_AUTH_DIR"
+
+    # Create per-user sudo key file
+    SUDO_KEY_FILE="$SUDO_AUTH_DIR/$TARGET_USER"
+    install -m 0644 -o root -g root /dev/null "$SUDO_KEY_FILE"
+    echo "$KEY" > "$SUDO_KEY_FILE"
+    echo "OK: installed sudo key for $TARGET_USER"
+
+    # Configure PAM for sudo
+    PAM_SUDO="/etc/pam.d/sudo"
+    PAM_LINE="auth sufficient pam_ssh_agent_auth.so file=/etc/security/sudo_authorized_keys/%u"
+
+    if [ -f "$PAM_SUDO" ]; then
+        if ! grep -qF "pam_ssh_agent_auth" "$PAM_SUDO"; then
+            # Add PAM line before @include common-auth
+            if grep -q "@include common-auth" "$PAM_SUDO"; then
+                sed -i "/@include common-auth/i $PAM_LINE" "$PAM_SUDO"
+                echo "OK: configured PAM for sudo key auth"
+            elif grep -q "auth.*pam_unix" "$PAM_SUDO"; then
+                # RHEL/CentOS style - add before pam_unix
+                sed -i "/auth.*pam_unix/i $PAM_LINE" "$PAM_SUDO"
+                echo "OK: configured PAM for sudo key auth"
+            else
+                # Add at beginning
+                sed -i "1a $PAM_LINE" "$PAM_SUDO"
+                echo "OK: configured PAM for sudo key auth"
+            fi
+        else
+            echo "OK: PAM already configured for sudo key auth"
+        fi
+    else
+        echo "WARN: /etc/pam.d/sudo not found"
+    fi
+
+    # Ensure SSH_AUTH_SOCK is preserved by sudo
+    SUDOERS_DROP="/etc/sudoers.d/ssh_auth_sock"
+    if [ ! -f "$SUDOERS_DROP" ]; then
+        echo 'Defaults env_keep += "SSH_AUTH_SOCK"' > "$SUDOERS_DROP"
+        chmod 440 "$SUDOERS_DROP"
+        echo "OK: configured sudo to preserve SSH_AUTH_SOCK"
+    fi
 fi
 """
     

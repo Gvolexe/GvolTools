@@ -30,7 +30,7 @@ try:
 except ImportError:
     paramiko = None
 
-__version__ = "1.2.83"
+__version__ = "1.2.84"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # XDG Paths
