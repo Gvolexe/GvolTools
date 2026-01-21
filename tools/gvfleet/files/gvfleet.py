@@ -28,6 +28,7 @@ from gvcore import (
     Output, Colors, c, die,
     Host, Inventory, Target,
     SSHProfileManager,
+    GVTOOLS_CONFIG,
     add_common_args, get_selector_from_args, apply_common_args,
     confirm,
 )
@@ -298,6 +299,94 @@ def cmd_import(args: argparse.Namespace) -> None:
         Output.success(f"Imported {imported} hosts")
 
 
+def cmd_setkey(args: argparse.Namespace) -> None:
+    """Link an SSH key from gvolkeymanager to host(s)."""
+    inventory = Inventory()
+    selector = get_selector_from_args(args)
+    
+    key_name = args.key
+    
+    # Validate key exists in keymanager registry
+    keyconf_path = GVTOOLS_CONFIG / "keyconf.json"
+    if keyconf_path.exists():
+        try:
+            keyconf = json.loads(keyconf_path.read_text(encoding="utf-8"))
+            registered_keys = keyconf.get("keys", {})
+            if key_name not in registered_keys:
+                Output.warn(f"key '{key_name}' not found in keymanager registry")
+                Output.info("Available keys:")
+                for k in registered_keys:
+                    Output.step(k)
+                if not args.force:
+                    die("use --force to set unregistered key")
+        except Exception:
+            pass
+    
+    # Get hosts to update
+    if args.host:
+        hosts = [inventory.get(args.host)]
+        if not hosts[0]:
+            die(f"host not found: {args.host}")
+    else:
+        hosts = inventory.select(selector) if not selector.is_empty() else []
+    
+    if not hosts:
+        die("no hosts matched selector")
+    
+    updated = 0
+    for host in hosts:
+        if host:
+            # Store key reference in metadata
+            if "ssh_key" not in host.metadata:
+                host.metadata["ssh_key"] = {}
+            host.metadata["ssh_key"] = key_name
+            inventory.add(host)
+            updated += 1
+            
+            if not Output.json_mode:
+                Output.success(f"{host.name}: linked to key '{key_name}'")
+    
+    inventory.save()
+    
+    if Output.json_mode:
+        Output.json_output({"status": "ok", "updated": updated, "key": key_name})
+
+
+def cmd_getkey(args: argparse.Namespace) -> None:
+    """Show SSH key linked to a host."""
+    inventory = Inventory()
+    
+    name = args.hostname
+    host = inventory.get(name)
+    
+    if not host:
+        die(f"host not found: {name}")
+    
+    key_name = host.metadata.get("ssh_key", "")
+    
+    if Output.json_mode:
+        Output.json_output({"host": name, "ssh_key": key_name})
+        return
+    
+    if key_name:
+        # Try to resolve key path from keyconf
+        keyconf_path = GVTOOLS_CONFIG / "keyconf.json"
+        key_path = ""
+        if keyconf_path.exists():
+            try:
+                keyconf = json.loads(keyconf_path.read_text(encoding="utf-8"))
+                key_info = keyconf.get("keys", {}).get(key_name, {})
+                key_path = key_info.get("path", "")
+            except Exception:
+                pass
+        
+        Output.info(f"SSH key for {c(name, Colors.CYAN)}: {c(key_name, Colors.GREEN)}")
+        if key_path:
+            Output.step(f"Path: {key_path}")
+    else:
+        Output.info(f"No SSH key linked to {name}")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Parser Setup
 # ─────────────────────────────────────────────────────────────────────────────
@@ -358,6 +447,23 @@ def setup_import_parser(parser: argparse.ArgumentParser) -> None:
     add_common_args(parser)
 
 
+def setup_setkey_parser(parser: argparse.ArgumentParser) -> None:
+    """Set up setkey subparser."""
+    parser.add_argument("key", help="key name from gvolkeymanager keyconf")
+    parser.add_argument("--host", "-H", help="specific host (or use selectors)")
+    parser.add_argument("--env", "-e", help="filter by environment")
+    parser.add_argument("--role", "-r", help="filter by role")
+    parser.add_argument("--group", "-g", help="filter by group")
+    parser.add_argument("--force", "-f", action="store_true", help="allow unregistered keys")
+    add_common_args(parser)
+
+
+def setup_getkey_parser(parser: argparse.ArgumentParser) -> None:
+    """Set up getkey subparser."""
+    parser.add_argument("hostname", help="hostname to check")
+    add_common_args(parser)
+
+
 # Attach setup functions to handlers
 cmd_add.setup_parser = setup_add_parser  # type: ignore
 cmd_del.setup_parser = setup_del_parser  # type: ignore
@@ -366,6 +472,8 @@ cmd_show.setup_parser = setup_show_parser  # type: ignore
 cmd_ssh.setup_parser = setup_ssh_parser  # type: ignore
 cmd_export.setup_parser = setup_export_parser  # type: ignore
 cmd_import.setup_parser = setup_import_parser  # type: ignore
+cmd_setkey.setup_parser = setup_setkey_parser  # type: ignore
+cmd_getkey.setup_parser = setup_getkey_parser  # type: ignore
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -424,6 +532,12 @@ Examples:
     import_p = subparsers.add_parser("import", help="import inventory from file")
     setup_import_parser(import_p)
     
+    setkey_p = subparsers.add_parser("setkey", help="link SSH key to host(s)")
+    setup_setkey_parser(setkey_p)
+    
+    getkey_p = subparsers.add_parser("getkey", help="show SSH key for host")
+    setup_getkey_parser(getkey_p)
+    
     args = parser.parse_args()
     apply_common_args(args)
     
@@ -445,6 +559,8 @@ Examples:
         "ssh": cmd_ssh,
         "export": cmd_export,
         "import": cmd_import,
+        "setkey": cmd_setkey,
+        "getkey": cmd_getkey,
     }
     
     if args.command in commands:

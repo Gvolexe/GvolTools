@@ -1,0 +1,32 @@
+{
+    "tool": "gvpolicy",
+    "version": "2.0.0",
+    "description": "Policy rules for fleet security and ops baselines",
+    "deps": {
+        "arch": [],
+        "debian": []
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvpolicy.py",
+                "dst": "~/.local/bin/gvpolicy",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/pol",
+                "target": "~/.local/bin/gvpolicy"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/pl",
+                "target": "~/.local/bin/gvpolicy"
+            }
+        ]
+    }
+}

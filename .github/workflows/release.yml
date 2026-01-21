@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - "v*"
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -36,20 +39,38 @@ jobs:
       - name: Check version consistency
         run: |
           echo "Checking version consistency..."
-          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          echo "Release tag version: $TAG_VERSION"
 
           # Check gvcore.py version (single source of truth)
           GVCORE_VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' tools/gvcore/files/gvcore.py)
           echo "gvcore.py version: $GVCORE_VERSION"
-          if [ "$GVCORE_VERSION" != "$TAG_VERSION" ]; then
-            echo "ERROR: gvcore.py version mismatch!"
-            echo "Expected: $TAG_VERSION"
-            echo "Found: $GVCORE_VERSION"
-            exit 1
+
+          # On tag push, verify tag matches gvcore version
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+            echo "Release tag version: $TAG_VERSION"
+            if [ "$GVCORE_VERSION" != "$TAG_VERSION" ]; then
+              echo "ERROR: gvcore.py version mismatch!"
+              echo "Expected: $TAG_VERSION"
+              echo "Found: $GVCORE_VERSION"
+              exit 1
+            fi
+            echo "✓ Version $TAG_VERSION matches gvcore.py"
+          else
+            echo "✓ PR check - gvcore version: $GVCORE_VERSION"
           fi
 
-          echo "✓ Version $TAG_VERSION matches gvcore.py"
+          # Verify all setup.json versions match gvcore
+          echo "Checking setup.json versions..."
+          for f in tools/*/setup.json; do
+            SETUP_VERSION=$(python -c "import json; print(json.load(open('$f')).get('version', 'unknown'))")
+            if [ "$SETUP_VERSION" != "$GVCORE_VERSION" ]; then
+              echo "ERROR: $f version mismatch!"
+              echo "Expected: $GVCORE_VERSION"
+              echo "Found: $SETUP_VERSION"
+              exit 1
+            fi
+          done
+          echo "✓ All setup.json versions match"
 
       - name: Run tests
         run: |
@@ -59,6 +80,7 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     needs: validate
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
 
@@ -126,6 +148,18 @@ jobs:
             | **gvgitopsinit** | GitOps scaffolding |
             | **gvpermcheck** | Permission auditing |
             | **gvolkeymanager** | SSH key management |
+            | **gvhealth** | Host and service health checks |
+            | **gvmetrics** | Resource metrics collection |
+            | **gvtcptest** | TCP connectivity testing |
+            | **gvjournal** | Systemd journal log fetching |
+            | **gvdeploy** | Command/script execution across hosts |
+            | **gvsync** | Rsync wrapper with SSH profiles |
+            | **gvsystemdctl** | Fleet-safe systemd management |
+            | **gvrebootctl** | Safe reboot coordination |
+            | **gvpolicy** | Fleet security policy rules |
+            | **gvdnsprovider** | DNS provider credentials |
+            | **gvconfigrender** | Template rendering and deployment |
+            | **gvnginxctl** | Nginx config testing and management |
 
             ### Requirements
 
@@ -157,9 +191,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get version from tag
+      - name: Get version
         id: version
-        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: |
+          # For PRs, get version from gvcore.py; for tags, use the tag
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' tools/gvcore/files/gvcore.py)
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          fi
 
       - name: Install build dependencies
         run: |
@@ -176,8 +217,30 @@ jobs:
       - name: Update PKGBUILD version
         run: |
           cd packaging/aur
-          sed -i "s/^pkgver=.*/pkgver=${{ steps.version.outputs.version }}/" PKGBUILD
-          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          VERSION="${{ steps.version.outputs.version }}"
+          sed -i "s|^pkgver=.*|pkgver=$VERSION|" PKGBUILD
+          sed -i "s|^pkgrel=.*|pkgrel=1|" PKGBUILD
+
+      - name: Prepare source for PR builds
+        if: github.event_name == 'pull_request'
+        run: |
+          # For PRs, create a local tarball since the tag doesn't exist yet
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p packaging/aur/src
+          # Create tarball from current checkout
+          tar czf "packaging/aur/gvoltools-${VERSION}.tar.gz" \
+            --transform "s|^|GvolTools-${VERSION}/|" \
+            --exclude='.git' --exclude='packaging/aur' \
+            tools/ installgvtools.sh OVERVIEW.md LICENSE README.md 2>/dev/null || \
+          tar czf "packaging/aur/gvoltools-${VERSION}.tar.gz" \
+            --transform "s|^|GvolTools-${VERSION}/|" \
+            --exclude='.git' --exclude='packaging/aur' \
+            tools/ installgvtools.sh OVERVIEW.md
+          # Update PKGBUILD to use local source
+          cd packaging/aur
+          sed -i "s|^source=.*|source=(\"gvoltools-${VERSION}.tar.gz\")|" PKGBUILD
+          # Fix ownership for builder user
+          chown -R builder:builder .
 
       - name: Build package
         run: |
@@ -199,15 +262,16 @@ jobs:
           gv --help || { echo "FAIL: gv"; FAILED=1; }
 
           # All tool commands
-          TOOLS="gvfleet gvsshprofile gvhostbootstrap gvsshaudit gvknownhostsctl gvsecretsync gvcertctl gvfirewallctl gvupdates gvsudoauth gvlogtriage gvbackupctl gvdnscheck gvnetdiag gvportsentry gvdotctl gvgitopsinit gvpermcheck gvolkeymanager"
+          TOOLS="gvfleet gvsshprofile gvhostbootstrap gvsshaudit gvknownhostsctl gvsecretsync gvcertctl gvfirewallctl gvupdates gvsudoauth gvlogtriage gvbackupctl gvdnscheck gvnetdiag gvportsentry gvdotctl gvgitopsinit gvpermcheck gvolkeymanager gvhealth gvmetrics gvtcptest gvjournal gvdeploy gvsync gvsystemdctl gvrebootctl gvpolicy gvdnsprovider gvconfigrender gvnginxctl"
 
           for tool in $TOOLS; do
             echo "Testing: $tool --help"
             $tool --help || { echo "FAIL: $tool"; FAILED=1; }
           done
 
-          # Test all aliases work (excluding su/backup which conflict with system commands)
-          ALIASES="fleet f gvf sp gvsp hb gvhb sa sshaudit gvsa kh gvkh sec secrets gvs cert gvcert fw gvfw upd gvu sudoauth gvsu lt logtriage gvlt bk gvbk dns dc gvdns nd netdiag gvnd ports gvps dt dot gvdt gi gitops gvgi pc perm gvpc km gvkm"
+          # Test all aliases work (excluding those that conflict with system commands)
+          # Conflicts: su, tc (traffic control), j, run, sync, sd, reboot, pl
+          ALIASES="fleet f gvf sp gvsp hb gvhb sa sshaudit gvsa kh gvkh sec secrets gvs cert gvcert fw gvfw upd gvu sudoauth gvsu lt logtriage gvlt bk gvbk dns dc gvdns nd netdiag gvnd ports gvps dt dot gvdt gi gitops gvgi pc perm gvpc km gvkm health hl metrics mx tcp jrnl dep sx svc rb pol dnsprov dp render rr ngx nx"
 
           for alias in $ALIASES; do
             echo "Testing alias: $alias --help"
@@ -233,6 +297,8 @@ jobs:
     name: Publish to AUR
     runs-on: ubuntu-latest
     needs: [release, test-arch-package]
+    # Only publish to AUR from main branch releases
+    if: github.ref_type == 'tag' && github.event.base_ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
@@ -243,8 +309,9 @@ jobs:
       - name: Update PKGBUILD version
         run: |
           cd packaging/aur
-          sed -i "s/^pkgver=.*/pkgver=${{ steps.version.outputs.version }}/" PKGBUILD
-          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          VERSION="${{ steps.version.outputs.version }}"
+          sed -i "s|^pkgver=.*|pkgver=$VERSION|" PKGBUILD
+          sed -i "s|^pkgrel=.*|pkgrel=1|" PKGBUILD
 
       - name: Prepare PKGBUILD for git package
         run: |

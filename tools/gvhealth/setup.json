@@ -1,0 +1,32 @@
+{
+    "tool": "gvhealth",
+    "version": "2.0.0",
+    "description": "Host and service health checks across fleet",
+    "deps": {
+        "arch": [],
+        "debian": []
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvhealth.py",
+                "dst": "~/.local/bin/gvhealth",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/health",
+                "target": "~/.local/bin/gvhealth"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/hl",
+                "target": "~/.local/bin/gvhealth"
+            }
+        ]
+    }
+}

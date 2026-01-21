@@ -1,0 +1,36 @@
+{
+    "tool": "gvsync",
+    "version": "2.0.0",
+    "description": "Rsync wrapper with SSH profile awareness",
+    "deps": {
+        "arch": [
+            "rsync"
+        ],
+        "debian": [
+            "rsync"
+        ]
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvsync.py",
+                "dst": "~/.local/bin/gvsync",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/sync",
+                "target": "~/.local/bin/gvsync"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/sx",
+                "target": "~/.local/bin/gvsync"
+            }
+        ]
+    }
+}
