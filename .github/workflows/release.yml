@@ -221,6 +221,25 @@ jobs:
           sed -i "s|^pkgver=.*|pkgver=$VERSION|" PKGBUILD
           sed -i "s|^pkgrel=.*|pkgrel=1|" PKGBUILD
 
+      - name: Prepare source for PR builds
+        if: github.event_name == 'pull_request'
+        run: |
+          # For PRs, create a local tarball since the tag doesn't exist yet
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p packaging/aur/src
+          # Create tarball from current checkout
+          tar czf "packaging/aur/gvoltools-${VERSION}.tar.gz" \
+            --transform "s|^|GvolTools-${VERSION}/|" \
+            --exclude='.git' --exclude='packaging/aur' \
+            tools/ installgvtools.sh OVERVIEW.md LICENSE README.md 2>/dev/null || \
+          tar czf "packaging/aur/gvoltools-${VERSION}.tar.gz" \
+            --transform "s|^|GvolTools-${VERSION}/|" \
+            --exclude='.git' --exclude='packaging/aur' \
+            tools/ installgvtools.sh OVERVIEW.md
+          # Update PKGBUILD to use local source
+          cd packaging/aur
+          sed -i "s|^source=.*|source=(\"gvoltools-${VERSION}.tar.gz\")|" PKGBUILD
+
       - name: Build package
         run: |
           cd packaging/aur
