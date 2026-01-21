@@ -9,6 +9,8 @@ Provides two main commands:
 Author: Gvol (gvol@nexusystems.org)
 """
 
+from __future__ import annotations
+
 import argparse
 import base64
 import getpass
