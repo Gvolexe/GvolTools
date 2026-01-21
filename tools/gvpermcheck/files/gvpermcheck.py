@@ -21,10 +21,10 @@ from gvcore import (
     Output, Colors, c, die,
     Target, Inventory,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    ssh_connect, ssh_exec,
+    ssh_connect, ssh_exec, get_ssh_credentials,
 )
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 
 SSH_PERM_SCRIPT = """
@@ -193,8 +193,10 @@ def cmd_ssh(args: argparse.Namespace) -> None:
     
     Output.header(f"SSH Permission Audit: {target.host}")
     
+    password, key_path = get_ssh_credentials(args)
+    
     try:
-        client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+        client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, SSH_PERM_SCRIPT, sudo=True)
         client.close()
         
@@ -219,8 +221,10 @@ def cmd_sudoers(args: argparse.Namespace) -> None:
     
     Output.header(f"Sudoers Audit: {target.host}")
     
+    password, key_path = get_ssh_credentials(args)
+    
     try:
-        client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+        client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, SUDOERS_PERM_SCRIPT, sudo=True)
         client.close()
         
@@ -245,8 +249,10 @@ def cmd_paths(args: argparse.Namespace) -> None:
     
     Output.header(f"Path Permissions Audit: {target.host}")
     
+    password, key_path = get_ssh_credentials(args)
+    
     try:
-        client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+        client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, PATHS_PERM_SCRIPT, sudo=True)
         client.close()
         
@@ -271,6 +277,8 @@ def cmd_report(args: argparse.Namespace) -> None:
         die("no targets specified")
     
     Output.header(f"Permission Report ({len(hosts)} hosts)")
+    
+    password, key_path = get_ssh_credentials(args)
     
     results = []
     headers = ["Host", "SSH", "Sudoers", "Paths"]
@@ -316,7 +324,7 @@ echo "$ssh_p $sudo_p $path_p"
         target = Target.from_host(host, default_user="root")
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, check_script, sudo=True)
             client.close()
             

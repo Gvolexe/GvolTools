@@ -25,10 +25,10 @@ from gvcore import (
     Output, Colors, c, die,
     Target, Inventory, GVTOOLS_CONFIG,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    ssh_connect, ssh_exec, confirm,
+    ssh_connect, ssh_exec, confirm, get_ssh_credentials,
 )
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 CERT_CONFIG = GVTOOLS_CONFIG / "certctl"
 PROVIDERS_FILE = CERT_CONFIG / "providers.json"
@@ -289,10 +289,12 @@ echo "OK"
             Output.step(h.name)
         return
     
+    password, key_path = get_ssh_credentials(args)
+    
     for host in hosts:
         target = Target.from_host(host, default_user="root")
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
             client.close()
             

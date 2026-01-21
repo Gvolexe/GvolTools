@@ -22,10 +22,10 @@ from gvcore import (
     Output, Colors, c, die,
     Target, Inventory,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    ssh_connect, ssh_exec, local_exec,
+    ssh_connect, ssh_exec, local_exec, get_ssh_credentials,
 )
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 
 def check_port_local(host: str, port: int, timeout: float = 3.0) -> bool:
@@ -109,7 +109,8 @@ ip -br addr show | head -5
 """
     
     try:
-        client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+        password, key_path = get_ssh_credentials(args)
+        client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
         client.close()
         print(stdout)

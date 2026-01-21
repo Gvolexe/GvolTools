@@ -25,10 +25,10 @@ from gvcore import (
     Output, Colors, c, die,
     Target, Inventory,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    ssh_connect, ssh_exec,
+    ssh_connect, ssh_exec, get_ssh_credentials,
 )
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -106,10 +106,10 @@ fi
 """
 
 
-def audit_remote(target: Target, strict_hostkey: bool = False) -> dict:
+def audit_remote(target: Target, strict_hostkey: bool = False, password: str = "", key_path: str = "") -> dict:
     """Audit remote SSH server."""
     try:
-        client = ssh_connect(target, strict_hostkey=strict_hostkey)
+        client = ssh_connect(target, password=password, key_path=key_path, strict_hostkey=strict_hostkey)
         exit_code, stdout, stderr = ssh_exec(client, REMOTE_AUDIT_SCRIPT, sudo=True)
         client.close()
         
@@ -164,9 +164,11 @@ def cmd_remote(args: argparse.Namespace) -> None:
     if not t.user:
         t.user = "root"
     
+    password, key_path = get_ssh_credentials(args)
+    
     Output.header(f"Remote SSH Audit: {t.host}")
     
-    result = audit_remote(t, strict_hostkey=args.strict_hostkey)
+    result = audit_remote(t, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
     
     if Output.json_mode:
         Output.json_output(result)
@@ -189,13 +191,15 @@ def cmd_fleet(args: argparse.Namespace) -> None:
     if not hosts:
         die("no hosts in inventory")
     
+    password, key_path = get_ssh_credentials(args)
+    
     Output.header(f"Fleet SSH Audit ({len(hosts)} hosts)")
     
     results = []
     for host in hosts:
         Output.info(f"Auditing {host.name}...")
         target = Target.from_host(host, default_user=host.user or "root")
-        result = audit_remote(target, strict_hostkey=args.strict_hostkey)
+        result = audit_remote(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         results.append(result)
     
     if Output.json_mode:

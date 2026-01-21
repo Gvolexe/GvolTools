@@ -14,7 +14,7 @@ import json
 import subprocess
 import sys
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 NO_COLOR = "NO_COLOR" in __import__("os").environ
 

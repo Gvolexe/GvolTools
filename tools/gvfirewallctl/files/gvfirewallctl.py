@@ -21,10 +21,10 @@ from gvcore import (
     Output, die,
     Target, Inventory,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    ssh_connect, ssh_exec,
+    ssh_connect, ssh_exec, get_ssh_credentials,
 )
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 # Role-based firewall baselines
 BASELINES = {
@@ -124,12 +124,14 @@ def cmd_apply(args: argparse.Namespace) -> None:
         print(script)
         return
     
+    password, key_path = get_ssh_credentials(args)
+    
     for host in hosts:
         Output.info(f"Configuring {host.name}...")
         target = Target.from_host(host, default_user="root")
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
             client.close()
             
@@ -153,8 +155,10 @@ def cmd_diff(args: argparse.Namespace) -> None:
     
     Output.header(f"Firewall Diff: {target.host}")
     
+    password, key_path = get_ssh_credentials(args)
+    
     try:
-        client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+        client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, make_status_script(), sudo=True)
         client.close()
         
@@ -173,12 +177,14 @@ def cmd_status(args: argparse.Namespace) -> None:
     if not hosts:
         die("no targets specified")
     
+    password, key_path = get_ssh_credentials(args)
+    
     for host in hosts:
         Output.header(f"Status: {host.name}")
         target = Target.from_host(host, default_user="root")
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, make_status_script(), sudo=True)
             client.close()
             print(stdout)
@@ -206,11 +212,13 @@ def cmd_lock(args: argparse.Namespace) -> None:
             Output.step(h.name)
         return
     
+    password, key_path = get_ssh_credentials(args)
+    
     for host in hosts:
         target = Target.from_host(host, default_user="root")
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
             client.close()
             

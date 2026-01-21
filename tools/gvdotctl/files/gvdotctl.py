@@ -23,10 +23,10 @@ from gvcore import (
     Output, Colors, c, die,
     Target, Inventory, GVTOOLS_CONFIG,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    ssh_connect, ssh_exec,
+    ssh_connect, ssh_exec, get_ssh_credentials,
 )
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 DOTFILES_DIR = GVTOOLS_CONFIG / "dotfiles"
 HISTORY_FILE = DOTFILES_DIR / "history.json"
@@ -162,6 +162,7 @@ def cmd_apply(args: argparse.Namespace) -> None:
     
     templates = DOTFILE_TEMPLATES[dotfile_type]
     history = load_history()
+    password, key_path = get_ssh_credentials(args)
     
     for host in hosts:
         Output.info(f"Deploying to {host.name}...")
@@ -172,7 +173,7 @@ def cmd_apply(args: argparse.Namespace) -> None:
             continue
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             
             for dest_path, content in templates.items():
                 dest = dest_path.replace("~", "$HOME")
@@ -230,7 +231,8 @@ done
 """
     
     try:
-        client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+        password, key_path = get_ssh_credentials(args)
+        client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, script)
         client.close()
         print(stdout)
@@ -267,7 +269,8 @@ fi
         return
     
     try:
-        client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+        password, key_path = get_ssh_credentials(args)
+        client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, script)
         client.close()
         

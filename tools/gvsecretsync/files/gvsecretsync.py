@@ -28,10 +28,10 @@ from gvcore import (
     Target, Inventory,
     SECRETS_PATH,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    ssh_connect, ssh_exec, confirm,
+    ssh_connect, ssh_exec, confirm, get_ssh_credentials,
 )
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 SECRETS_INDEX = SECRETS_PATH / "index.json"
 SECRETS_KEY_FILE = SECRETS_PATH / ".key"
@@ -192,10 +192,11 @@ echo "OK"
 """
     
     deployed = []
+    password, key_path = get_ssh_credentials(args)
     for host in hosts:
         target = Target.from_host(host, default_user="root")
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
             client.close()
             

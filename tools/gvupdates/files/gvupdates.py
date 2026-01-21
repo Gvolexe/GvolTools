@@ -21,10 +21,10 @@ from gvcore import (
     Output, Colors, c, die,
     Target, Inventory,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    ssh_connect, ssh_exec,
+    ssh_connect, ssh_exec, get_ssh_credentials,
 )
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 
 ENABLE_SCRIPT = """
@@ -116,12 +116,14 @@ def cmd_enable(args: argparse.Namespace) -> None:
             Output.step(h.name)
         return
     
+    password, key_path = get_ssh_credentials(args)
+    
     for host in hosts:
         Output.info(f"Configuring {host.name}...")
         target = Target.from_host(host, default_user="root")
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, ENABLE_SCRIPT, sudo=True)
             client.close()
             
@@ -142,6 +144,8 @@ def cmd_check(args: argparse.Namespace) -> None:
     if not hosts:
         die("no targets specified")
     
+    password, key_path = get_ssh_credentials(args)
+    
     results = []
     
     for host in hosts:
@@ -149,7 +153,7 @@ def cmd_check(args: argparse.Namespace) -> None:
         target = Target.from_host(host, default_user="root")
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, CHECK_SCRIPT, sudo=True)
             client.close()
             
@@ -183,12 +187,14 @@ def cmd_apply(args: argparse.Namespace) -> None:
             Output.step(h.name)
         return
     
+    password, key_path = get_ssh_credentials(args)
+    
     for host in hosts:
         Output.info(f"Updating {host.name}...")
         target = Target.from_host(host, default_user="root")
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, APPLY_SCRIPT, sudo=True)
             client.close()
             
@@ -213,13 +219,15 @@ def cmd_report(args: argparse.Namespace) -> None:
     
     Output.header(f"Update Report ({len(hosts)} hosts)")
     
+    password, key_path = get_ssh_credentials(args)
+    
     results = []
     
     for host in hosts:
         target = Target.from_host(host, default_user="root")
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, CHECK_SCRIPT, sudo=True)
             client.close()
             

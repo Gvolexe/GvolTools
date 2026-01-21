@@ -23,10 +23,10 @@ from gvcore import (
     Output, Colors, c, die,
     Target, Inventory, GVTOOLS_CONFIG,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    ssh_connect, ssh_exec,
+    ssh_connect, ssh_exec, get_ssh_credentials,
 )
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 BACKUP_CONFIG = GVTOOLS_CONFIG / "backupctl"
 BACKUP_INDEX = BACKUP_CONFIG / "backups.json"
@@ -133,13 +133,14 @@ def cmd_init(args: argparse.Namespace) -> None:
         return
     
     config = load_backup_config()
+    password, key_path = get_ssh_credentials(args)
     
     for host in hosts:
         Output.info(f"Configuring {host.name}...")
         target = Target.from_host(host, default_user="root")
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
             client.close()
             
@@ -171,6 +172,7 @@ def cmd_run(args: argparse.Namespace) -> None:
         die("no targets specified")
     
     Output.header("Run Backups")
+    password, key_path = get_ssh_credentials(args)
     
     for host in hosts:
         if host.name not in config.get("backups", {}):
@@ -184,7 +186,7 @@ def cmd_run(args: argparse.Namespace) -> None:
         target = Target.from_host(host, default_user="root")
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
             client.close()
             
@@ -210,6 +212,7 @@ def cmd_verify(args: argparse.Namespace) -> None:
     if not hosts:
         die("no targets specified")
     
+    password, key_path = get_ssh_credentials(args)
     for host in hosts:
         Output.header(f"Verify: {host.name}")
         
@@ -223,7 +226,7 @@ def cmd_verify(args: argparse.Namespace) -> None:
         target = Target.from_host(host, default_user="root")
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
             client.close()
             print(stdout)
@@ -287,7 +290,8 @@ echo "OK: restored to {to_path}"
         return
     
     try:
-        client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+        password, key_path = get_ssh_credentials(args)
+        client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
         client.close()
         

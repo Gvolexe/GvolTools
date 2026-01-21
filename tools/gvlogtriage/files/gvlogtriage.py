@@ -21,10 +21,10 @@ from gvcore import (
     Output, die,
     Target, Inventory,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    ssh_connect, ssh_exec,
+    ssh_connect, ssh_exec, get_ssh_credentials,
 )
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 
 def make_ssh_log_script(since: str) -> str:
@@ -107,7 +107,8 @@ def cmd_ssh(args: argparse.Namespace) -> None:
     Output.header(f"SSH Logs: {target.host}")
     
     try:
-        client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+        password, key_path = get_ssh_credentials(args)
+        client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, make_ssh_log_script(since), sudo=True)
         client.close()
         print(stdout)
@@ -130,7 +131,8 @@ def cmd_sudo(args: argparse.Namespace) -> None:
     Output.header(f"Sudo Logs: {target.host}")
     
     try:
-        client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+        password, key_path = get_ssh_credentials(args)
+        client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, make_sudo_log_script(since), sudo=True)
         client.close()
         print(stdout)
@@ -153,7 +155,8 @@ def cmd_bans(args: argparse.Namespace) -> None:
     Output.header(f"Fail2ban: {target.host}")
     
     try:
-        client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+        password, key_path = get_ssh_credentials(args)
+        client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, make_bans_script(since), sudo=True)
         client.close()
         print(stdout)
@@ -173,12 +176,13 @@ def cmd_report(args: argparse.Namespace) -> None:
     
     results = []
     
+    password, key_path = get_ssh_credentials(args)
     for host in hosts:
         Output.header(f"Report: {host.name}")
         target = Target.from_host(host, default_user="root")
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, make_full_report_script(since), sudo=True)
             client.close()
             

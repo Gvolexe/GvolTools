@@ -28,10 +28,10 @@ from gvcore import (
     Output, die,
     Target, Inventory,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    ssh_connect, ssh_exec,
+    ssh_connect, ssh_exec, get_ssh_credentials,
 )
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 # Key registry path (compatible with gvolkeymanager)
 KEY_REGISTRY = Path.home() / ".config" / "gvolkeymanager" / "keys.json"
@@ -264,11 +264,12 @@ def cmd_init(args: argparse.Namespace) -> None:
         Output.info("Dry run - would execute init script")
         return
     
-    # Get password
+    # Get password and key_path
     password = getpass.getpass(f"Password for {target}: ")
+    _, key_path = get_ssh_credentials(args)
     
     Output.info("Connecting...")
-    client = ssh_connect(target, password=password, strict_hostkey=args.strict_hostkey)
+    client = ssh_connect(target, password=password, key_path=key_path, strict_hostkey=args.strict_hostkey)
     
     Output.info("Running init script...")
     script = make_init_script(pubkey_b64, new_user)
@@ -322,12 +323,13 @@ def cmd_harden(args: argparse.Namespace) -> None:
             Output.info("Dry run - would apply hardening")
             continue
         
-        # Get password if needed
+        # Get password and key_path if needed
         target = Target.from_host(host, default_user="root")
         password = getpass.getpass(f"Password for {target}: ")
+        _, key_path = get_ssh_credentials(args)
         
         Output.info("Connecting...")
-        client = ssh_connect(target, password=password, strict_hostkey=args.strict_hostkey)
+        client = ssh_connect(target, password=password, key_path=key_path, strict_hostkey=args.strict_hostkey)
         
         Output.info("Applying hardening...")
         script = make_harden_script()
@@ -377,7 +379,8 @@ def cmd_full(args: argparse.Namespace) -> None:
     
     try:
         # Try key-based auth
-        client = ssh_connect(new_target, strict_hostkey=args.strict_hostkey)
+        _, key_path = get_ssh_credentials(args)
+        client = ssh_connect(new_target, key_path=key_path, strict_hostkey=args.strict_hostkey)
         client.close()
         Output.success(f"Verified: can connect as {new_user}")
     except Exception as e:
@@ -408,13 +411,15 @@ def cmd_status(args: argparse.Namespace) -> None:
     
     results = []
     
+    password, key_path = get_ssh_credentials(args)
+    
     for host in hosts:
         Output.header(f"Status: {host.name}")
         
         target = Target.from_host(host, default_user=host.user or "root")
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             
             script = make_status_script()
             exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)

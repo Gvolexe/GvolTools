@@ -24,10 +24,10 @@ from gvcore import (
     Output, Colors, c, die,
     Target, Inventory, GVTOOLS_CONFIG,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    ssh_connect, ssh_exec,
+    ssh_connect, ssh_exec, get_ssh_credentials,
 )
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 BASELINES_DIR = GVTOOLS_CONFIG / "port-baselines"
 
@@ -102,7 +102,8 @@ def cmd_scan(args: argparse.Namespace) -> None:
             target.user = "root"
         
         try:
-            client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+            password, key_path = get_ssh_credentials(args)
+            client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, make_remote_scan_script(), sudo=True)
             client.close()
             print(stdout)
@@ -121,7 +122,8 @@ def cmd_baseline_save(args: argparse.Namespace) -> None:
     Output.header(f"Save Baseline: {target.host}")
     
     try:
-        client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+        password, key_path = get_ssh_credentials(args)
+        client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, make_remote_scan_script(), sudo=True)
         client.close()
         
@@ -164,7 +166,8 @@ def cmd_baseline_diff(args: argparse.Namespace) -> None:
     Output.info(f"Baseline from: {baseline.get('created', 'unknown')[:10]}")
     
     try:
-        client = ssh_connect(target, strict_hostkey=args.strict_hostkey)
+        password, key_path = get_ssh_credentials(args)
+        client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, make_remote_scan_script(), sudo=True)
         client.close()
         

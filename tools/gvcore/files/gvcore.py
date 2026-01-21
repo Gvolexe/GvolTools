@@ -30,7 +30,7 @@ try:
 except ImportError:
     paramiko = None
 
-__version__ = "1.1.6"
+__version__ = "1.2.0"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # XDG Paths
@@ -773,6 +773,29 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="reject unknown SSH host keys",
     )
+    parser.add_argument(
+        "-i", "--key",
+        dest="key_path",
+        help="path to SSH private key",
+    )
+    parser.add_argument(
+        "-p", "--password",
+        action="store_true",
+        dest="ask_password",
+        help="prompt for SSH password",
+    )
+
+
+def get_ssh_credentials(args: argparse.Namespace) -> tuple[str, str]:
+    """Get SSH credentials from args. Returns (password, key_path)."""
+    password = ""
+    key_path = getattr(args, "key_path", "") or ""
+    
+    if getattr(args, "ask_password", False):
+        import getpass
+        password = getpass.getpass("SSH Password: ")
+    
+    return password, key_path
 
 
 def add_target_args(parser: argparse.ArgumentParser) -> None:
