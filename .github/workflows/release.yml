@@ -239,6 +239,8 @@ jobs:
           # Update PKGBUILD to use local source
           cd packaging/aur
           sed -i "s|^source=.*|source=(\"gvoltools-${VERSION}.tar.gz\")|" PKGBUILD
+          # Fix ownership for builder user
+          chown -R builder:builder .
 
       - name: Build package
         run: |
