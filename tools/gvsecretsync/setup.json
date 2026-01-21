@@ -1,6 +1,6 @@
 {
     "tool": "gvsecretsync",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "Encrypted secrets management and deployment",
     "deps": {
         "arch": [

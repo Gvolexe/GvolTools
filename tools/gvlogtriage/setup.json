@@ -1,6 +1,6 @@
 {
     "tool": "gvlogtriage",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "Auth/system log analysis (SSH, sudo, fail2ban)",
     "deps": {
         "arch": [],

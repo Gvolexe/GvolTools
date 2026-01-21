@@ -1,6 +1,6 @@
 {
     "tool": "gvconfigrender",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "Template rendering and deployment for fleet configurations",
     "deps": {
         "arch": [],

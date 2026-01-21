@@ -1,6 +1,6 @@
 {
     "tool": "gvrebootctl",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "Detect reboots needed, coordinate safe reboots, validate services post-reboot",
     "deps": {
         "arch": [],

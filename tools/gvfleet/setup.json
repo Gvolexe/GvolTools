@@ -1,6 +1,6 @@
 {
     "tool": "gvfleet",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "Host inventory and selection engine for gvtools",
     "deps": {
         "arch": [],

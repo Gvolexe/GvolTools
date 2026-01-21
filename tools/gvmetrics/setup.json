@@ -1,6 +1,6 @@
 {
     "tool": "gvmetrics",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "Resource metrics collection and time series recording",
     "deps": {
         "arch": [],

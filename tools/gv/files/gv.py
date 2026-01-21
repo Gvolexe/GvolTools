@@ -156,6 +156,78 @@ TOOLS = {
         "commands": ["generate", "push", "audit", "revoke"],
         "category": "SSH",
     },
+    "gvconfigrender": {
+        "aliases": ["render", "rr"],
+        "description": "Template rendering and deployment",
+        "commands": ["render", "deploy", "vars", "template"],
+        "category": "Config",
+    },
+    "gvdeploy": {
+        "aliases": ["dep", "run"],
+        "description": "Execute commands across target sets",
+        "commands": ["cmd", "script", "copy", "fetch", "results"],
+        "category": "Deploy",
+    },
+    "gvdnsprovider": {
+        "aliases": ["dnsprov", "dp"],
+        "description": "DNS provider credential store",
+        "commands": ["add", "list", "show", "test", "del", "export", "import"],
+        "category": "Network",
+    },
+    "gvhealth": {
+        "aliases": ["health", "hl"],
+        "description": "Host and service health checks",
+        "commands": ["host", "services", "endpoints", "summary", "define"],
+        "category": "Monitoring",
+    },
+    "gvjournal": {
+        "aliases": ["jrnl", "j"],
+        "description": "Systemd journal log fetching",
+        "commands": ["unit", "grep", "boots", "export"],
+        "category": "Monitoring",
+    },
+    "gvmetrics": {
+        "aliases": ["metrics", "mx"],
+        "description": "Resource metrics and time series",
+        "commands": ["snap", "record", "export", "compare"],
+        "category": "Monitoring",
+    },
+    "gvnginxctl": {
+        "aliases": ["ngx", "nx"],
+        "description": "Nginx configuration management",
+        "commands": ["status", "test", "reload", "restart", "logs", "site"],
+        "category": "System",
+    },
+    "gvpolicy": {
+        "aliases": ["pol", "pl"],
+        "description": "Policy rules for fleet baselines",
+        "commands": ["rule", "eval", "waive", "checks"],
+        "category": "Security",
+    },
+    "gvrebootctl": {
+        "aliases": ["reboot", "rb"],
+        "description": "Safe reboot coordination",
+        "commands": ["check", "plan", "run", "validate", "cancel"],
+        "category": "System",
+    },
+    "gvsync": {
+        "aliases": ["sync", "sy"],
+        "description": "Rsync wrapper with SSH profiles",
+        "commands": ["push", "pull", "mirror", "diff"],
+        "category": "Deploy",
+    },
+    "gvsystemdctl": {
+        "aliases": ["sd", "svc"],
+        "description": "Fleet-safe systemd management",
+        "commands": ["status", "restart", "start", "stop", "enable", "disable", "logs", "rollout"],
+        "category": "System",
+    },
+    "gvtcptest": {
+        "aliases": ["tcp", "tc"],
+        "description": "TCP connectivity testing",
+        "commands": ["check", "local", "explain"],
+        "category": "Network",
+    },
 }
 
 

@@ -378,6 +378,7 @@ Examples:
     if args.command in commands:
         commands[args.command](args)
     elif not args.command:
+        args.name = None
         cmd_status(args)
     else:
         parser.print_help()

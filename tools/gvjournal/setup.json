@@ -1,6 +1,6 @@
 {
     "tool": "gvjournal",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "Fetch and filter systemd journal logs across hosts",
     "deps": {
         "arch": [],

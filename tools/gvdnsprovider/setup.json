@@ -1,6 +1,6 @@
 {
     "tool": "gvdnsprovider",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "DNS provider credential store for Cloudflare and other providers",
     "deps": {
         "arch": [],

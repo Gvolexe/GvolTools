@@ -1,6 +1,6 @@
 {
     "tool": "gvsshaudit",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "Audit SSH server config and access",
     "deps": {
         "arch": [
