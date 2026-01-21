@@ -1,6 +1,6 @@
 {
   "tool": "gvolkeymanager",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "SSH key upload and registry utility (keyup/keyconf)",
   "deps": {
     "arch": [

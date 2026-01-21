@@ -155,18 +155,18 @@ class Output:
     @staticmethod
     def info(msg: str) -> None:
         prefix = c("→", Colors.BLUE, Colors.BOLD)
-        print(f"{prefix} {msg}")
+        print(f"{prefix} {msg}", flush=True)
     
     @staticmethod
     def step(msg: str) -> None:
         prefix = c("  •", Colors.DIM)
-        print(f"{prefix} {msg}")
+        print(f"{prefix} {msg}", flush=True)
     
     @staticmethod
     def debug(msg: str) -> None:
         if Output.verbose:
             prefix = c("  ⋯", Colors.DIM)
-            print(f"{prefix} {msg}")
+            print(f"{prefix} {msg}", flush=True)
     
     @staticmethod
     def header(msg: str) -> None:
@@ -680,7 +680,7 @@ def ssh_connect(
     user = host_config.get("user", target.user)
     identity_file = host_config.get("identityfile", [])
     
-    Output.debug(f"connecting to {user}@{hostname}:{port}...")
+    Output.debug(f"target: {user}@{hostname}:{port}")
     
     connect_kwargs = {
         "hostname": hostname,
@@ -691,16 +691,19 @@ def ssh_connect(
         "auth_timeout": timeout,
     }
     
+    auth_method = "agent/keys"
     if password:
         connect_kwargs["password"] = password
         connect_kwargs["look_for_keys"] = False
         connect_kwargs["allow_agent"] = False
+        auth_method = "password"
     elif key_path:
         # Explicit key path takes precedence
         connect_kwargs["key_filename"] = key_path
         connect_kwargs["look_for_keys"] = False
         connect_kwargs["allow_agent"] = False
-        Output.debug(f"using key: {key_path}")
+        auth_method = f"key: {key_path}"
+        Output.debug(f"using explicit key: {key_path}")
     elif identity_file:
         # Use identity file from SSH config
         # Expand ~ in paths
@@ -708,11 +711,15 @@ def ssh_connect(
         connect_kwargs["key_filename"] = expanded_keys
         connect_kwargs["look_for_keys"] = True
         connect_kwargs["allow_agent"] = True
+        auth_method = f"SSH config keys: {expanded_keys}"
         Output.debug(f"using keys from SSH config: {expanded_keys}")
     else:
         # Use default keys and agent
         connect_kwargs["look_for_keys"] = True
         connect_kwargs["allow_agent"] = True
+        Output.debug("using SSH agent and default keys")
+    
+    Output.debug(f"connecting with {auth_method} (timeout: {timeout}s)...")
     
     try:
         client.connect(**connect_kwargs)
@@ -734,6 +741,8 @@ def ssh_exec(
     password: str = "",
 ) -> tuple[int, str, str]:
     """Execute command on remote host."""
+    Output.debug(f"executing command (sudo={sudo})...")
+    
     if sudo:
         cmd = f"sudo -S -p '' sh -lc {shlex.quote(command)}"
         stdin, stdout, stderr = client.exec_command(cmd, get_pty=True)
@@ -744,10 +753,12 @@ def ssh_exec(
         cmd = f"sh -lc {shlex.quote(command)}"
         stdin, stdout, stderr = client.exec_command(cmd)
     
+    Output.debug("waiting for command output...")
     exit_code = stdout.channel.recv_exit_status()
     out = stdout.read().decode(errors="replace")
     err = stderr.read().decode(errors="replace")
     
+    Output.debug(f"command completed with exit code {exit_code}")
     return exit_code, out, err
 
 

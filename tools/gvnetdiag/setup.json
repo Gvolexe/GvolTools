@@ -1,6 +1,6 @@
 {
     "tool": "gvnetdiag",
-    "version": "1.2.3",
+    "version": "1.2.4",
     "description": "Network diagnostics (ping, trace, ports)",
     "deps": {
         "arch": [
