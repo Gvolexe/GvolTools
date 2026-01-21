@@ -24,6 +24,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path.home() / ".local" / "lib" / "gvtools"))
 
 from gvcore import (
+    __version__,
     Output, Colors, c, die,
     Host, Inventory, Target,
     SSHProfileManager,
@@ -31,7 +32,6 @@ from gvcore import (
     confirm,
 )
 
-__version__ = "1.2.1"
 
 
 # ─────────────────────────────────────────────────────────────────────────────

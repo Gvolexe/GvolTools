@@ -19,13 +19,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path.home() / ".local" / "lib" / "gvtools"))
 
 from gvcore import (
+    __version__,
     Output, Colors, c, die,
     SSHProfile, SSHProfileManager,
     add_common_args, apply_common_args,
     confirm, DEFAULT_SSH_PORT,
 )
 
-__version__ = "1.2.1"
 
 
 # ─────────────────────────────────────────────────────────────────────────────

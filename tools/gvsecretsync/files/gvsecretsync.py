@@ -24,6 +24,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path.home() / ".local" / "lib" / "gvtools"))
 
 from gvcore import (
+    __version__,
     Output, Colors, c, die,
     Target, Inventory,
     SECRETS_PATH,
@@ -31,7 +32,6 @@ from gvcore import (
     ssh_connect, ssh_exec, confirm, get_ssh_credentials,
 )
 
-__version__ = "1.2.1"
 
 SECRETS_INDEX = SECRETS_PATH / "index.json"
 SECRETS_KEY_FILE = SECRETS_PATH / ".key"

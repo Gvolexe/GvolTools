@@ -22,11 +22,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path.home() / ".local" / "lib" / "gvtools"))
 
 from gvcore import (
+    __version__,
     Output, die,
     add_common_args, apply_common_args, confirm,
 )
 
-__version__ = "1.2.1"
 
 KNOWN_HOSTS = Path.home() / ".ssh" / "known_hosts"
 

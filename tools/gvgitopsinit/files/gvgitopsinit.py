@@ -21,11 +21,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path.home() / ".local" / "lib" / "gvtools"))
 
 from gvcore import (
+    __version__,
     Output, Colors, c, die,
     add_common_args, apply_common_args,
 )
 
-__version__ = "1.2.1"
 
 
 GITOPS_STRUCTURE = {

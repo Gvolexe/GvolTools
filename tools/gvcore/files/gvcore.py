@@ -30,7 +30,7 @@ try:
 except ImportError:
     paramiko = None
 
-__version__ = "1.2.80"
+__version__ = "1.2.81"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # XDG Paths
@@ -802,24 +802,29 @@ def ssh_exec(
         
         return None
     
-    # Check if local SSH agent is available
+    # Check if local SSH agent socket is available
+    agent_socket = None
     if forward_agent:
-        auth_sock = find_agent_socket()
-        if auth_sock:
+        agent_socket = find_agent_socket()
+        if agent_socket:
             # Temporarily set SSH_AUTH_SOCK so paramiko can find it
             old_auth_sock = os.environ.get("SSH_AUTH_SOCK")
-            os.environ["SSH_AUTH_SOCK"] = auth_sock
+            os.environ["SSH_AUTH_SOCK"] = agent_socket
             try:
                 agent = paramiko.agent.Agent()
                 keys = agent.get_keys()
-                agent_available = len(keys) > 0
+                num_keys = len(keys)
                 agent.close()
-                if agent_available:
-                    Output.debug(f"local SSH agent available at {auth_sock} with {len(keys)} key(s)")
+                if num_keys > 0:
+                    Output.debug(f"local SSH agent at {agent_socket} has {num_keys} key(s)")
                 else:
-                    Output.debug(f"local SSH agent at {auth_sock} has no keys")
+                    # gpg-agent or keyring may still work even if get_keys() returns empty
+                    Output.debug(f"local SSH agent socket found at {agent_socket} (keys may be managed externally)")
+                # Agent socket exists, so we can try forwarding
+                agent_available = True
             except Exception as e:
-                Output.debug(f"could not connect to local SSH agent at {auth_sock}: {e}")
+                Output.debug(f"could not connect to local SSH agent at {agent_socket}: {e}")
+                agent_available = False
                 # Restore old value if we failed
                 if old_auth_sock:
                     os.environ["SSH_AUTH_SOCK"] = old_auth_sock
@@ -834,7 +839,7 @@ def ssh_exec(
     transport = client.get_transport()
     channel = transport.open_session()
     
-    # Request agent forwarding if enabled and agent is available
+    # Request agent forwarding if socket exists (even if keys not visible locally)
     if forward_agent and agent_available:
         try:
             paramiko.agent.AgentRequestHandler(channel)

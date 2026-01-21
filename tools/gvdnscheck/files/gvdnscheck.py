@@ -21,12 +21,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path.home() / ".local" / "lib" / "gvtools"))
 
 from gvcore import (
+    __version__,
     Output, Colors, c, die,
     Inventory,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
 )
 
-__version__ = "1.2.1"
 
 
 def resolve_dns(hostname: str, record_type: str = "A") -> list[str]:
