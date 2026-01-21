@@ -161,6 +161,53 @@ def die(msg: str, code: int = 1) -> None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# SSH Config Parsing
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_ssh_config_identity(hostname: str) -> str | None:
+    """Get IdentityFile from SSH config for a given hostname."""
+    ssh_config_path = Path.home() / ".ssh" / "config"
+    if not ssh_config_path.exists():
+        return None
+    
+    try:
+        if paramiko:
+            config = paramiko.SSHConfig()
+            with open(ssh_config_path) as f:
+                config.parse(f)
+            host_config = config.lookup(hostname)
+            identityfile = host_config.get("identityfile")
+            if identityfile:
+                # paramiko returns a list
+                return str(Path(identityfile[0]).expanduser()) if identityfile else None
+        else:
+            # Fallback: simple parsing
+            current_hosts = []
+            identity_for_host = None
+            with open(ssh_config_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    parts = line.split(None, 1)
+                    if len(parts) != 2:
+                        continue
+                    key, value = parts[0].lower(), parts[1]
+                    if key == "host":
+                        current_hosts = value.split()
+                    elif key == "identityfile":
+                        import fnmatch
+                        for pattern in current_hosts:
+                            if fnmatch.fnmatch(hostname, pattern):
+                                identity_for_host = str(Path(value).expanduser())
+                                break
+            return identity_for_host
+    except Exception:
+        return None
+    return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -760,7 +807,30 @@ def cmd_keyup(
     cfg = Config.load()
     prefs = Preferences.load()
     
-    # Use preferences as defaults
+    # Parse target first to get hostname for SSH config lookup
+    target = Target.parse(target_str)
+    
+    # Try to find key from SSH config if not specified
+    if not keyname:
+        ssh_identity = get_ssh_config_identity(target.host)
+        if ssh_identity:
+            # Convert identity file path to a key name in our registry
+            ssh_identity_path = Path(ssh_identity)
+            # Look for matching key in registry (by path or pub key path)
+            for name, path in cfg.keys.items():
+                reg_path = Path(path).expanduser()
+                # Check if registry path matches (with or without .pub)
+                if reg_path == ssh_identity_path or reg_path == Path(ssh_identity + ".pub"):
+                    keyname = name
+                    Output.info(f"using key '{keyname}' from SSH config for {target.host}")
+                    break
+                # Also check without .pub suffix
+                if str(reg_path).rstrip(".pub") == str(ssh_identity_path).rstrip(".pub"):
+                    keyname = name
+                    Output.info(f"using key '{keyname}' from SSH config for {target.host}")
+                    break
+    
+    # Fall back to preferences
     if not keyname and prefs.default_key:
         keyname = prefs.default_key
     
@@ -779,8 +849,6 @@ def cmd_keyup(
     
     pubkey = pubkey_path.read_text(encoding="utf-8").strip()
     pubkey_b64 = base64.b64encode(pubkey.encode("utf-8")).decode("ascii")
-    
-    target = Target.parse(target_str)
     
     # Apply preference for strict_hostkey if not overridden
     if prefs.strict_hostkey and not strict_hostkey:

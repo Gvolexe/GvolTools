@@ -48,48 +48,48 @@ export PATH="$HOME/.local/bin:$PATH"
 
 ### Inventory & Profiles
 
-| Tool           | Aliases  | Description                  |
-| -------------- | -------- | ---------------------------- |
-| **gv**         | gvtools  | Help and command dispatcher  |
-| **gvfleet**    | fleet, f | Host inventory management    |
-| **gvsshprofile** | sp     | SSH connection profiles      |
+| Tool             | Aliases  | Description                 |
+| ---------------- | -------- | --------------------------- |
+| **gv**           | gvtools  | Help and command dispatcher |
+| **gvfleet**      | fleet, f | Host inventory management   |
+| **gvsshprofile** | sp       | SSH connection profiles     |
 
 ### Security & Hardening
 
-| Tool              | Aliases     | Description                   |
-| ----------------- | ----------- | ----------------------------- |
-| **gvhostbootstrap** | hb        | Initial host bootstrap        |
-| **gvsshaudit**    | sa          | SSH configuration auditing    |
-| **gvknownhostsctl** | kh        | known_hosts management        |
-| **gvsecretsync**  | sec, secrets | Encrypted secrets sync       |
-| **gvfirewallctl** | fw          | Firewall baselines            |
-| **gvsudoauth**    | su          | Sudo authentication config    |
-| **gvpermcheck**   | pc, perm    | Permission auditing           |
-| **gvolkeymanager** | keyup, keyconf | SSH key management        |
+| Tool                | Aliases        | Description                |
+| ------------------- | -------------- | -------------------------- |
+| **gvhostbootstrap** | hb             | Initial host bootstrap     |
+| **gvsshaudit**      | sa             | SSH configuration auditing |
+| **gvknownhostsctl** | kh             | known_hosts management     |
+| **gvsecretsync**    | sec, secrets   | Encrypted secrets sync     |
+| **gvfirewallctl**   | fw             | Firewall baselines         |
+| **gvsudoauth**      | su             | Sudo authentication config |
+| **gvpermcheck**     | pc, perm       | Permission auditing        |
+| **gvolkeymanager**  | keyup, keyconf | SSH key management         |
 
 ### Certificates & Updates
 
-| Tool          | Aliases    | Description                  |
-| ------------- | ---------- | ---------------------------- |
-| **gvcertctl** | cert, cc   | TLS certs (ACME/Cloudflare)  |
-| **gvupdates** | upd        | Security update management   |
+| Tool          | Aliases  | Description                 |
+| ------------- | -------- | --------------------------- |
+| **gvcertctl** | cert, cc | TLS certs (ACME/Cloudflare) |
+| **gvupdates** | upd      | Security update management  |
 
 ### Monitoring & Diagnostics
 
-| Tool           | Aliases     | Description               |
-| -------------- | ----------- | ------------------------- |
-| **gvlogtriage** | lt         | Log analysis              |
-| **gvdnscheck** | dns, dc     | DNS validation            |
-| **gvnetdiag**  | nd          | Network diagnostics       |
-| **gvportsentry** | ps, ports | Port scanning/baselines   |
+| Tool             | Aliases   | Description             |
+| ---------------- | --------- | ----------------------- |
+| **gvlogtriage**  | lt        | Log analysis            |
+| **gvdnscheck**   | dns, dc   | DNS validation          |
+| **gvnetdiag**    | nd        | Network diagnostics     |
+| **gvportsentry** | ps, ports | Port scanning/baselines |
 
 ### Configuration & DevOps
 
-| Tool           | Aliases   | Description           |
-| -------------- | --------- | --------------------- |
-| **gvdotctl**   | dt, dot   | Dotfile management    |
-| **gvgitopsinit** | gi      | GitOps scaffolding    |
-| **gvbackupctl** | bk       | Backup with restic    |
+| Tool             | Aliases | Description        |
+| ---------------- | ------- | ------------------ |
+| **gvdotctl**     | dt, dot | Dotfile management |
+| **gvgitopsinit** | gi      | GitOps scaffolding |
+| **gvbackupctl**  | bk      | Backup with restic |
 
 ## Target Selection
 
@@ -102,19 +102,19 @@ gvfleet ssh admin@server.example.com
 # From inventory
 gvfleet ssh --targets "web*"
 
-# By attributes  
+# By attributes
 gvfleet ssh --env production --role webserver
 ```
 
 ## Common Flags
 
-| Flag             | Description              |
-| ---------------- | ------------------------ |
-| `--dry-run`      | Preview without applying |
-| `--json`         | JSON output for scripts  |
-| `--verbose`      | Verbose output           |
-| `--yes`          | Skip confirmations       |
-| `--strict-hostkey` | Require known hosts    |
+| Flag               | Description              |
+| ------------------ | ------------------------ |
+| `--dry-run`        | Preview without applying |
+| `--json`           | JSON output for scripts  |
+| `--verbose`        | Verbose output           |
+| `--yes`            | Skip confirmations       |
+| `--strict-hostkey` | Require known hosts      |
 
 ## Installer Usage
 
