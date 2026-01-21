@@ -39,11 +39,11 @@ jobs:
       - name: Check version consistency
         run: |
           echo "Checking version consistency..."
-          
+
           # Check gvcore.py version (single source of truth)
           GVCORE_VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' tools/gvcore/files/gvcore.py)
           echo "gvcore.py version: $GVCORE_VERSION"
-          
+
           # On tag push, verify tag matches gvcore version
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             TAG_VERSION="${GITHUB_REF#refs/tags/v}"

@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path.home() / ".local" / "lib" / "gvtools"))
 from gvcore import (
     __version__,
     Output, Colors, c, die,
-    Host, Inventory, Target,
+    Inventory, Target,
     GVTOOLS_CONFIG,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
     ssh_connect, ssh_exec, get_ssh_credentials,

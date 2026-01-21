@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import socket
 import sys
 import time
@@ -26,8 +25,7 @@ sys.path.insert(0, str(Path.home() / ".local" / "lib" / "gvtools"))
 from gvcore import (
     __version__,
     Output, Colors, c, die,
-    Host, Inventory, Target,
-    SSHProfileManager,
+    Inventory, Target,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
     confirm, ssh_connect, ssh_exec, get_ssh_credentials,
 )

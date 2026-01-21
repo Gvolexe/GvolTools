@@ -17,8 +17,7 @@ import csv
 import json
 import sys
 import time
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 
@@ -312,7 +311,7 @@ def cmd_record(args: argparse.Namespace) -> None:
                         data = json.loads(out)
                         snapshot = MetricsSnapshot.from_dict(data)
                     except json.JSONDecodeError:
-                        snapshot.error = f"parse error"
+                        snapshot.error = "parse error"
                 else:
                     snapshot.error = f"exit {code}"
             except Exception as e:

@@ -13,7 +13,6 @@ Author: Gvol (gvol@nexusystems.org)
 from __future__ import annotations
 
 import argparse
-import base64
 import getpass
 import json
 import os
@@ -26,7 +25,7 @@ sys.path.insert(0, str(Path.home() / ".local" / "lib" / "gvtools"))
 from gvcore import (
     __version__,
     Output, Colors, c, die,
-    GVTOOLS_CONFIG, SECRETS_PATH,
+    GVTOOLS_CONFIG,
     add_common_args, apply_common_args,
     confirm,
 )
@@ -411,7 +410,7 @@ def cmd_test(args: argparse.Namespace) -> None:
                 Output.error(f"Token test failed: {msg}")
             sys.exit(1)
         
-        Output.success(f"Token valid")
+        Output.success("Token valid")
         
         # DNS-01 permissions test
         if zone:

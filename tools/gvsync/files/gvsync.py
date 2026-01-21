@@ -13,7 +13,6 @@ Author: Gvol (gvol@nexusystems.org)
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import subprocess
 import sys
@@ -26,10 +25,10 @@ sys.path.insert(0, str(Path.home() / ".local" / "lib" / "gvtools"))
 from gvcore import (
     __version__,
     Output, Colors, c, die,
-    Host, Inventory, Target,
+    Inventory, Target,
     GVTOOLS_DATA,
     add_common_args, add_target_args, get_selector_from_args, apply_common_args,
-    confirm, SSHProfileManager,
+    SSHProfileManager,
 )
 
 
