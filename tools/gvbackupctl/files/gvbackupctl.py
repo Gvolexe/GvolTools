@@ -133,7 +133,7 @@ def cmd_init(args: argparse.Namespace) -> None:
         return
     
     config = load_backup_config()
-    password, key_path = get_ssh_credentials(args)
+    password, key_path, sudo_password = get_ssh_credentials(args)
     
     for host in hosts:
         Output.info(f"Configuring {host.name}...")
@@ -141,7 +141,7 @@ def cmd_init(args: argparse.Namespace) -> None:
         
         try:
             client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
-            exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
+            exit_code, stdout, stderr = ssh_exec(client, script, sudo=True, password=sudo_password)
             client.close()
             
             if exit_code == 0:
@@ -172,7 +172,7 @@ def cmd_run(args: argparse.Namespace) -> None:
         die("no targets specified")
     
     Output.header("Run Backups")
-    password, key_path = get_ssh_credentials(args)
+    password, key_path, sudo_password = get_ssh_credentials(args)
     
     for host in hosts:
         if host.name not in config.get("backups", {}):
@@ -187,7 +187,7 @@ def cmd_run(args: argparse.Namespace) -> None:
         
         try:
             client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
-            exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
+            exit_code, stdout, stderr = ssh_exec(client, script, sudo=True, password=sudo_password)
             client.close()
             
             if exit_code == 0:
@@ -212,7 +212,7 @@ def cmd_verify(args: argparse.Namespace) -> None:
     if not hosts:
         die("no targets specified")
     
-    password, key_path = get_ssh_credentials(args)
+    password, key_path, sudo_password = get_ssh_credentials(args)
     for host in hosts:
         Output.header(f"Verify: {host.name}")
         
@@ -227,7 +227,7 @@ def cmd_verify(args: argparse.Namespace) -> None:
         
         try:
             client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
-            exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
+            exit_code, stdout, stderr = ssh_exec(client, script, sudo=True, password=sudo_password)
             client.close()
             print(stdout)
         except Exception as e:
@@ -290,9 +290,9 @@ echo "OK: restored to {to_path}"
         return
     
     try:
-        password, key_path = get_ssh_credentials(args)
+        password, key_path, sudo_password = get_ssh_credentials(args)
         client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
-        exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
+        exit_code, stdout, stderr = ssh_exec(client, script, sudo=True, password=sudo_password)
         client.close()
         
         if exit_code == 0:

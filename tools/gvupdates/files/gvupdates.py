@@ -116,7 +116,7 @@ def cmd_enable(args: argparse.Namespace) -> None:
             Output.step(h.name)
         return
     
-    password, key_path = get_ssh_credentials(args)
+    password, key_path, sudo_password = get_ssh_credentials(args)
     
     for host in hosts:
         Output.info(f"Configuring {host.name}...")
@@ -124,7 +124,7 @@ def cmd_enable(args: argparse.Namespace) -> None:
         
         try:
             client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
-            exit_code, stdout, stderr = ssh_exec(client, ENABLE_SCRIPT, sudo=True)
+            exit_code, stdout, stderr = ssh_exec(client, ENABLE_SCRIPT, sudo=True, password=sudo_password)
             client.close()
             
             if exit_code == 0:
@@ -144,7 +144,7 @@ def cmd_check(args: argparse.Namespace) -> None:
     if not hosts:
         die("no targets specified")
     
-    password, key_path = get_ssh_credentials(args)
+    password, key_path, sudo_password = get_ssh_credentials(args)
     
     results = []
     
@@ -154,7 +154,7 @@ def cmd_check(args: argparse.Namespace) -> None:
         
         try:
             client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
-            exit_code, stdout, stderr = ssh_exec(client, CHECK_SCRIPT, sudo=True)
+            exit_code, stdout, stderr = ssh_exec(client, CHECK_SCRIPT, sudo=True, password=sudo_password)
             client.close()
             
             if Output.json_mode:
@@ -187,7 +187,7 @@ def cmd_apply(args: argparse.Namespace) -> None:
             Output.step(h.name)
         return
     
-    password, key_path = get_ssh_credentials(args)
+    password, key_path, sudo_password = get_ssh_credentials(args)
     
     for host in hosts:
         Output.info(f"Updating {host.name}...")
@@ -195,7 +195,7 @@ def cmd_apply(args: argparse.Namespace) -> None:
         
         try:
             client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
-            exit_code, stdout, stderr = ssh_exec(client, APPLY_SCRIPT, sudo=True)
+            exit_code, stdout, stderr = ssh_exec(client, APPLY_SCRIPT, sudo=True, password=sudo_password)
             client.close()
             
             if exit_code == 0:
@@ -219,7 +219,7 @@ def cmd_report(args: argparse.Namespace) -> None:
     
     Output.header(f"Update Report ({len(hosts)} hosts)")
     
-    password, key_path = get_ssh_credentials(args)
+    password, key_path, sudo_password = get_ssh_credentials(args)
     
     results = []
     
@@ -228,7 +228,7 @@ def cmd_report(args: argparse.Namespace) -> None:
         
         try:
             client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
-            exit_code, stdout, stderr = ssh_exec(client, CHECK_SCRIPT, sudo=True)
+            exit_code, stdout, stderr = ssh_exec(client, CHECK_SCRIPT, sudo=True, password=sudo_password)
             client.close()
             
             # Parse results

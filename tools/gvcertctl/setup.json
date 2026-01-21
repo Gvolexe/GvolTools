@@ -1,6 +1,6 @@
 {
     "tool": "gvcertctl",
-    "version": "1.2.4",
+    "version": "1.2.5",
     "description": "TLS certificate issuance and deployment (ACME/Let's Encrypt)",
     "deps": {
         "arch": [

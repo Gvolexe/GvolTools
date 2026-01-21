@@ -266,7 +266,7 @@ def cmd_init(args: argparse.Namespace) -> None:
     
     # Get password and key_path
     password = getpass.getpass(f"Password for {target}: ")
-    _, key_path = get_ssh_credentials(args)
+    _, key_path, sudo_password = get_ssh_credentials(args)
     
     Output.info("Connecting...")
     client = ssh_connect(target, password=password, key_path=key_path, strict_hostkey=args.strict_hostkey)
@@ -326,7 +326,7 @@ def cmd_harden(args: argparse.Namespace) -> None:
         # Get password and key_path if needed
         target = Target.from_host(host, default_user="root")
         password = getpass.getpass(f"Password for {target}: ")
-        _, key_path = get_ssh_credentials(args)
+        _, key_path, sudo_password = get_ssh_credentials(args)
         
         Output.info("Connecting...")
         client = ssh_connect(target, password=password, key_path=key_path, strict_hostkey=args.strict_hostkey)
@@ -379,7 +379,7 @@ def cmd_full(args: argparse.Namespace) -> None:
     
     try:
         # Try key-based auth
-        _, key_path = get_ssh_credentials(args)
+        _, key_path, sudo_password = get_ssh_credentials(args)
         client = ssh_connect(new_target, key_path=key_path, strict_hostkey=args.strict_hostkey)
         client.close()
         Output.success(f"Verified: can connect as {new_user}")
@@ -411,7 +411,7 @@ def cmd_status(args: argparse.Namespace) -> None:
     
     results = []
     
-    password, key_path = get_ssh_credentials(args)
+    password, key_path, sudo_password = get_ssh_credentials(args)
     
     for host in hosts:
         Output.header(f"Status: {host.name}")
@@ -422,7 +422,7 @@ def cmd_status(args: argparse.Namespace) -> None:
             client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             
             script = make_status_script()
-            exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
+            exit_code, stdout, stderr = ssh_exec(client, script, sudo=True, password=sudo_password)
             
             client.close()
             

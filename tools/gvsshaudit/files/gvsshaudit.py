@@ -110,7 +110,7 @@ def audit_remote(target: Target, strict_hostkey: bool = False, password: str = "
     """Audit remote SSH server."""
     try:
         client = ssh_connect(target, password=password, key_path=key_path, strict_hostkey=strict_hostkey)
-        exit_code, stdout, stderr = ssh_exec(client, REMOTE_AUDIT_SCRIPT, sudo=True)
+        exit_code, stdout, stderr = ssh_exec(client, REMOTE_AUDIT_SCRIPT, sudo=True, password=sudo_password)
         client.close()
         
         return {"host": target.host, "status": "ok", "output": stdout}
@@ -164,7 +164,7 @@ def cmd_remote(args: argparse.Namespace) -> None:
     if not t.user:
         t.user = "root"
     
-    password, key_path = get_ssh_credentials(args)
+    password, key_path, sudo_password = get_ssh_credentials(args)
     
     Output.header(f"Remote SSH Audit: {t.host}")
     
@@ -191,7 +191,7 @@ def cmd_fleet(args: argparse.Namespace) -> None:
     if not hosts:
         die("no hosts in inventory")
     
-    password, key_path = get_ssh_credentials(args)
+    password, key_path, sudo_password = get_ssh_credentials(args)
     
     Output.header(f"Fleet SSH Audit ({len(hosts)} hosts)")
     

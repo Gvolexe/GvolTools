@@ -102,7 +102,7 @@ def cmd_scan(args: argparse.Namespace) -> None:
             target.user = "root"
         
         try:
-            password, key_path = get_ssh_credentials(args)
+            password, key_path, sudo_password = get_ssh_credentials(args)
             client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
             exit_code, stdout, stderr = ssh_exec(client, make_remote_scan_script(), sudo=True)
             client.close()
@@ -122,7 +122,7 @@ def cmd_baseline_save(args: argparse.Namespace) -> None:
     Output.header(f"Save Baseline: {target.host}")
     
     try:
-        password, key_path = get_ssh_credentials(args)
+        password, key_path, sudo_password = get_ssh_credentials(args)
         client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, make_remote_scan_script(), sudo=True)
         client.close()
@@ -166,7 +166,7 @@ def cmd_baseline_diff(args: argparse.Namespace) -> None:
     Output.info(f"Baseline from: {baseline.get('created', 'unknown')[:10]}")
     
     try:
-        password, key_path = get_ssh_credentials(args)
+        password, key_path, sudo_password = get_ssh_credentials(args)
         client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, make_remote_scan_script(), sudo=True)
         client.close()

@@ -289,13 +289,13 @@ echo "OK"
             Output.step(h.name)
         return
     
-    password, key_path = get_ssh_credentials(args)
+    password, key_path, sudo_password = get_ssh_credentials(args)
     
     for host in hosts:
         target = Target.from_host(host, default_user="root")
         try:
             client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
-            exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
+            exit_code, stdout, stderr = ssh_exec(client, script, sudo=True, password=sudo_password)
             client.close()
             
             if exit_code == 0:

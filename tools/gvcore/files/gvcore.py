@@ -842,18 +842,30 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
             dest="ask_password",
             help="prompt for SSH password",
         )
+    if not _has_argument(parser, "-s", "--sudo"):
+        parser.add_argument(
+            "-s", "--sudo",
+            action="store_true",
+            dest="ask_sudo",
+            help="prompt for sudo password on remote host",
+        )
 
 
-def get_ssh_credentials(args: argparse.Namespace) -> tuple[str, str]:
-    """Get SSH credentials from args. Returns (password, key_path)."""
+def get_ssh_credentials(args: argparse.Namespace) -> tuple[str, str, str]:
+    """Get SSH credentials from args. Returns (password, key_path, sudo_password)."""
     password = ""
+    sudo_password = ""
     key_path = getattr(args, "key_path", "") or ""
     
     if getattr(args, "ask_password", False):
         import getpass
         password = getpass.getpass("SSH Password: ")
     
-    return password, key_path
+    if getattr(args, "ask_sudo", False):
+        import getpass
+        sudo_password = getpass.getpass("Sudo Password: ")
+    
+    return password, key_path, sudo_password
 
 
 def add_target_args(parser: argparse.ArgumentParser) -> None:

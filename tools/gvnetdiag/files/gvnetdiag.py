@@ -109,9 +109,9 @@ ip -br addr show | head -5
 """
     
     try:
-        password, key_path = get_ssh_credentials(args)
+        password, key_path, sudo_password = get_ssh_credentials(args)
         client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
-        exit_code, stdout, stderr = ssh_exec(client, script, sudo=True)
+        exit_code, stdout, stderr = ssh_exec(client, script, sudo=True, password=sudo_password)
         client.close()
         print(stdout)
     except Exception as e:

@@ -162,7 +162,7 @@ def cmd_apply(args: argparse.Namespace) -> None:
     
     templates = DOTFILE_TEMPLATES[dotfile_type]
     history = load_history()
-    password, key_path = get_ssh_credentials(args)
+    password, key_path, sudo_password = get_ssh_credentials(args)
     
     for host in hosts:
         Output.info(f"Deploying to {host.name}...")
@@ -231,7 +231,7 @@ done
 """
     
     try:
-        password, key_path = get_ssh_credentials(args)
+        password, key_path, sudo_password = get_ssh_credentials(args)
         client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, script)
         client.close()
@@ -269,7 +269,7 @@ fi
         return
     
     try:
-        password, key_path = get_ssh_credentials(args)
+        password, key_path, sudo_password = get_ssh_credentials(args)
         client = ssh_connect(target, strict_hostkey=args.strict_hostkey, password=password, key_path=key_path)
         exit_code, stdout, stderr = ssh_exec(client, script)
         client.close()
