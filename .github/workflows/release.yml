@@ -149,10 +149,96 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Arch Linux Package Verification
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  test-arch-package:
+    name: Test Arch Package
+    runs-on: ubuntu-latest
+    needs: validate
+    container:
+      image: archlinux:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Install build dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm base-devel git sudo python python-pip python-paramiko python-cryptography
+
+      - name: Create build user
+        run: |
+          # makepkg cannot run as root, create a build user
+          useradd -m builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          chown -R builder:builder .
+
+      - name: Update PKGBUILD version
+        run: |
+          cd packaging/aur
+          sed -i "s/^pkgver=.*/pkgver=${{ steps.version.outputs.version }}/" PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+
+      - name: Build package
+        run: |
+          cd packaging/aur
+          su builder -c "makepkg -sf --noconfirm"
+
+      - name: Install package
+        run: |
+          cd packaging/aur
+          pacman -U --noconfirm gvoltools-*.pkg.tar.zst
+
+      - name: Verify all commands work
+        run: |
+          echo "Testing all gvoltools commands..."
+          FAILED=0
+          
+          # Main entry point
+          echo "Testing: gv --help"
+          gv --help || { echo "FAIL: gv"; FAILED=1; }
+          
+          # All tool commands
+          TOOLS="gvfleet gvsshprofile gvhostbootstrap gvsshaudit gvknownhostsctl gvsecretsync gvcertctl gvfirewallctl gvupdates gvsudoauth gvlogtriage gvbackupctl gvdnscheck gvnetdiag gvportsentry gvdotctl gvgitopsinit gvpermcheck gvolkeymanager"
+          
+          for tool in $TOOLS; do
+            echo "Testing: $tool --help"
+            $tool --help || { echo "FAIL: $tool"; FAILED=1; }
+          done
+          
+          # Test all aliases work
+          ALIASES="fleet f gvf sp gvsp hb gvhb sa sshaudit gvsa kh gvkh sec secrets gvs cert gvcert fw gvfw upd gvu su sudoauth gvsu lt logtriage gvlt bk backup gvbk dns dc gvdns nd netdiag gvnd ports gvps dt dot gvdt gi gitops gvgi pc perm gvpc km gvkm"
+          
+          for alias in $ALIASES; do
+            echo "Testing alias: $alias --help"
+            $alias --help || { echo "FAIL: $alias"; FAILED=1; }
+          done
+          
+          if [ $FAILED -eq 1 ]; then
+            echo "ERROR: Some commands failed!"
+            exit 1
+          fi
+          
+          echo "✓ All commands and aliases verified successfully!"
+
+      - name: Test gv list and version
+        run: |
+          echo "Testing gv list..."
+          gv list
+          echo ""
+          echo "Testing gv --version..."
+          gv --version
+
   publish-aur:
     name: Publish to AUR
     runs-on: ubuntu-latest
-    needs: release
+    needs: [release, test-arch-package]
     steps:
       - uses: actions/checkout@v4
 

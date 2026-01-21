@@ -1,6 +1,6 @@
 {
     "tool": "gvknownhostsctl",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "description": "Manage ~/.ssh/known_hosts safely",
     "deps": {
         "arch": [],
