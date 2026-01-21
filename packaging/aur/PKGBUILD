@@ -77,9 +77,8 @@ package() {
     ln -sf gvsecretsync secrets
     ln -sf gvsecretsync gvs
     
-    # gvcertctl aliases: cert, cc, gvcert
+    # gvcertctl aliases: cert, gvcert (cc conflicts with gcc)
     ln -sf gvcertctl cert
-    ln -sf gvcertctl cc
     ln -sf gvcertctl gvcert
     
     # gvfirewallctl aliases: fw, gvfw
