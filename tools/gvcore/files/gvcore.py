@@ -30,7 +30,7 @@ try:
 except ImportError:
     paramiko = None
 
-__version__ = "0.1.28"
+__version__ = "1.2.80"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # XDG Paths
@@ -762,27 +762,71 @@ def ssh_exec(
     """
     import paramiko.agent
     import os
+    import glob
     
     forward_agent = getattr(client, "_gvtools_forward_agent", False)
     agent_available = False
     
-    # Check if local SSH agent is available
-    if forward_agent:
+    # Try to find SSH agent socket
+    def find_agent_socket() -> str | None:
+        """Find SSH agent socket in common locations."""
+        # Check environment variable first
         auth_sock = os.environ.get("SSH_AUTH_SOCK")
         if auth_sock and os.path.exists(auth_sock):
+            return auth_sock
+        
+        # Check XDG_RUNTIME_DIR (systemd user sessions)
+        xdg_runtime = os.environ.get("XDG_RUNTIME_DIR")
+        if xdg_runtime:
+            for pattern in ["ssh-agent.socket", "gcr/ssh", "keyring/ssh", "gnupg/S.gpg-agent.ssh"]:
+                path = os.path.join(xdg_runtime, pattern)
+                if os.path.exists(path):
+                    return path
+        
+        # Check /tmp for ssh-* directories
+        for agent_dir in glob.glob("/tmp/ssh-*/agent.*"):
+            if os.path.exists(agent_dir):
+                return agent_dir
+        
+        # Check common keyring locations
+        uid = os.getuid()
+        common_paths = [
+            f"/run/user/{uid}/ssh-agent.socket",
+            f"/run/user/{uid}/gcr/ssh",
+            f"/run/user/{uid}/keyring/ssh",
+            f"/run/user/{uid}/gnupg/S.gpg-agent.ssh",
+        ]
+        for path in common_paths:
+            if os.path.exists(path):
+                return path
+        
+        return None
+    
+    # Check if local SSH agent is available
+    if forward_agent:
+        auth_sock = find_agent_socket()
+        if auth_sock:
+            # Temporarily set SSH_AUTH_SOCK so paramiko can find it
+            old_auth_sock = os.environ.get("SSH_AUTH_SOCK")
+            os.environ["SSH_AUTH_SOCK"] = auth_sock
             try:
                 agent = paramiko.agent.Agent()
                 keys = agent.get_keys()
                 agent_available = len(keys) > 0
                 agent.close()
                 if agent_available:
-                    Output.debug(f"local SSH agent available with {len(keys)} key(s)")
+                    Output.debug(f"local SSH agent available at {auth_sock} with {len(keys)} key(s)")
                 else:
-                    Output.debug("local SSH agent has no keys")
+                    Output.debug(f"local SSH agent at {auth_sock} has no keys")
             except Exception as e:
-                Output.debug(f"could not connect to local SSH agent: {e}")
+                Output.debug(f"could not connect to local SSH agent at {auth_sock}: {e}")
+                # Restore old value if we failed
+                if old_auth_sock:
+                    os.environ["SSH_AUTH_SOCK"] = old_auth_sock
+                elif "SSH_AUTH_SOCK" in os.environ:
+                    del os.environ["SSH_AUTH_SOCK"]
         else:
-            Output.debug("SSH_AUTH_SOCK not set or socket not found")
+            Output.debug("no SSH agent socket found in common locations")
     
     Output.debug(f"executing command (sudo={sudo}, forward_agent={forward_agent}, agent_available={agent_available})...")
     
