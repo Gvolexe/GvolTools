@@ -39,23 +39,17 @@ jobs:
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
           echo "Release tag version: $TAG_VERSION"
 
-          # Check installer version
-          INSTALLER_VERSION=$(grep 'readonly VERSION=' installgvtools.sh | cut -d'"' -f2)
-          echo "Installer version: $INSTALLER_VERSION"
-          if [ "$INSTALLER_VERSION" != "$TAG_VERSION" ]; then
-            echo "ERROR: Installer version mismatch!"
-            exit 1
-          fi
-
-          # Check gvcore version
-          GVCORE_VERSION=$(python -c "import json; print(json.load(open('tools/gvcore/setup.json'))['version'])")
-          echo "gvcore version: $GVCORE_VERSION"
+          # Check gvcore.py version (single source of truth)
+          GVCORE_VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' tools/gvcore/files/gvcore.py)
+          echo "gvcore.py version: $GVCORE_VERSION"
           if [ "$GVCORE_VERSION" != "$TAG_VERSION" ]; then
-            echo "ERROR: gvcore version mismatch!"
+            echo "ERROR: gvcore.py version mismatch!"
+            echo "Expected: $TAG_VERSION"
+            echo "Found: $GVCORE_VERSION"
             exit 1
           fi
 
-          echo "✓ All versions match $TAG_VERSION"
+          echo "✓ Version $TAG_VERSION matches gvcore.py"
 
       - name: Run tests
         run: |

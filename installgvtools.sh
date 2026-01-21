@@ -6,11 +6,14 @@
 #
 set -euo pipefail
 
-readonly VERSION="1.2.80"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT_DIR
 TOOLS_DIR="$ROOT_DIR/tools"
 readonly TOOLS_DIR
+
+# Extract version from gvcore.py (single source of truth)
+VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' "$TOOLS_DIR/gvcore/files/gvcore.py" 2>/dev/null || echo "0.0.0")
+readonly VERSION
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Colors
