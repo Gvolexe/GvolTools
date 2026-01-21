@@ -1,0 +1,33 @@
+{
+  "tool": "gvolkeymanager",
+  "version": "1.0.0",
+  "description": "SSH key upload and registry utility (keyup/keyconf)",
+  "deps": {
+    "arch": [
+      "python-paramiko"
+    ],
+    "debian": [
+      "python3-paramiko"
+    ]
+  },
+  "install": {
+    "targets": [
+      {
+        "type": "copy",
+        "src": "files/gvolkeymanager.py",
+        "dst": "~/.local/bin/gvolkeymanager",
+        "chmod": "755"
+      },
+      {
+        "type": "symlink",
+        "link": "~/.local/bin/keyup",
+        "target": "~/.local/bin/gvolkeymanager"
+      },
+      {
+        "type": "symlink",
+        "link": "~/.local/bin/keyconf",
+        "target": "~/.local/bin/gvolkeymanager"
+      }
+    ]
+  }
+}

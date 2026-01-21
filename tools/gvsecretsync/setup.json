@@ -1,0 +1,41 @@
+{
+    "tool": "gvsecretsync",
+    "version": "1.0.0",
+    "description": "Encrypted secrets management and deployment",
+    "deps": {
+        "arch": [
+            "python-cryptography"
+        ],
+        "debian": [
+            "python3-cryptography"
+        ]
+    },
+    "requires": [
+        "gvcore"
+    ],
+    "install": {
+        "targets": [
+            {
+                "type": "copy",
+                "src": "files/gvsecretsync.py",
+                "dst": "~/.local/bin/gvsecretsync",
+                "chmod": "755"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/sec",
+                "target": "~/.local/bin/gvsecretsync"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/secrets",
+                "target": "~/.local/bin/gvsecretsync"
+            },
+            {
+                "type": "symlink",
+                "link": "~/.local/bin/gvs",
+                "target": "~/.local/bin/gvsecretsync"
+            }
+        ]
+    }
+}

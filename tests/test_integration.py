@@ -38,14 +38,20 @@ def root() -> Path:
     return Path(__file__).parent.parent
 
 
-def _test_setup_json_validity(root: Path) -> tuple[int, int]:
+@pytest.fixture
+def tools_dir() -> Path:
+    """Return the tools directory."""
+    return Path(__file__).parent.parent / "tools"
+
+
+def _test_setup_json_validity(tools_dir: Path) -> tuple[int, int]:
     """Test that all setup.json files are valid."""
     passed = 0
     failed = 0
     
     print(f"\n{c('Testing setup.json files...', Colors.BOLD)}\n")
     
-    for setup_file in sorted(root.glob("*/setup.json")):
+    for setup_file in sorted(tools_dir.glob("*/setup.json")):
         tool_name = setup_file.parent.name
         
         try:
@@ -86,21 +92,21 @@ def _test_setup_json_validity(root: Path) -> tuple[int, int]:
     return passed, failed
 
 
-def test_setup_json_validity(root: Path) -> None:
+def test_setup_json_validity(tools_dir: Path) -> None:
     """Test that all setup.json files are valid."""
-    passed, failed = _test_setup_json_validity(root)
+    passed, failed = _test_setup_json_validity(tools_dir)
     assert failed == 0, f"{failed} setup.json files invalid"
     assert passed > 0, "No setup.json files found"
 
 
-def _test_gvcore_structure(root: Path) -> tuple[int, int]:
+def _test_gvcore_structure(tools_dir: Path) -> tuple[int, int]:
     """Test gvcore shared library structure."""
     passed = 0
     failed = 0
     
     print(f"\n{c('Testing gvcore...', Colors.BOLD)}\n")
     
-    gvcore_path = root / "gvcore" / "files" / "gvcore.py"
+    gvcore_path = tools_dir / "gvcore" / "files" / "gvcore.py"
     
     if not gvcore_path.exists():
         print(f"  {c('✗', Colors.RED)} gvcore.py not found")
@@ -136,20 +142,20 @@ def _test_gvcore_structure(root: Path) -> tuple[int, int]:
     return passed, failed
 
 
-def test_gvcore_structure(root: Path) -> None:
+def test_gvcore_structure(tools_dir: Path) -> None:
     """Test gvcore shared library structure."""
-    passed, failed = _test_gvcore_structure(root)
+    passed, failed = _test_gvcore_structure(tools_dir)
     assert failed == 0, f"{failed} gvcore components missing"
 
 
-def _test_tool_consistency(root: Path) -> tuple[int, int]:
+def _test_tool_consistency(tools_dir: Path) -> tuple[int, int]:
     """Test that all tools have consistent structure."""
     passed = 0
     failed = 0
     
     print(f"\n{c('Testing tool consistency...', Colors.BOLD)}\n")
     
-    for setup_file in sorted(root.glob("*/setup.json")):
+    for setup_file in sorted(tools_dir.glob("*/setup.json")):
         tool_dir = setup_file.parent
         tool_name = tool_dir.name
         
@@ -204,9 +210,9 @@ def _test_tool_consistency(root: Path) -> tuple[int, int]:
     return passed, failed
 
 
-def test_tool_consistency(root: Path) -> None:
+def test_tool_consistency(tools_dir: Path) -> None:
     """Test that all tools have consistent structure."""
-    passed, failed = _test_tool_consistency(root)
+    passed, failed = _test_tool_consistency(tools_dir)
     assert failed == 0, f"{failed} tools have inconsistent structure"
 
 
@@ -254,6 +260,7 @@ def test_installer(root: Path) -> None:
 
 def main() -> None:
     root = Path(__file__).parent.parent
+    tools_dir = root / "tools"
     
     print(f"\n{c('═' * 60, Colors.CYAN)}")
     print(f"{c(' GVTools Integration Tests', Colors.BOLD)}")
@@ -262,15 +269,15 @@ def main() -> None:
     total_passed = 0
     total_failed = 0
     
-    p, f = _test_setup_json_validity(root)
+    p, f = _test_setup_json_validity(tools_dir)
     total_passed += p
     total_failed += f
     
-    p, f = _test_gvcore_structure(root)
+    p, f = _test_gvcore_structure(tools_dir)
     total_passed += p
     total_failed += f
     
-    p, f = _test_tool_consistency(root)
+    p, f = _test_tool_consistency(tools_dir)
     total_passed += p
     total_failed += f
     

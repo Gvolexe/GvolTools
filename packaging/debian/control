@@ -1,0 +1,28 @@
+Source: gvoltools
+Section: admin
+Priority: optional
+Maintainer: Gvol <gvol@nexusystems.org>
+Build-Depends: debhelper-compat (= 13), python3
+Standards-Version: 4.6.2
+Homepage: https://github.com/Gvolexe/GvolTools
+Vcs-Browser: https://github.com/Gvolexe/GvolTools
+Vcs-Git: https://github.com/Gvolexe/GvolTools.git
+Rules-Requires-Root: no
+
+Package: gvoltools
+Architecture: all
+Depends: ${misc:Depends}, python3 (>= 3.10), python3-paramiko, python3-cryptography
+Suggests: openssh-client
+Description: SSH management and system administration tools
+ GvolTools is a collection of utilities for managing SSH connections,
+ host inventories, and system administration tasks across multiple
+ Linux systems.
+ .
+ Features include:
+  * SSH key management with encrypted storage
+  * Host inventory with metadata and selection
+  * SSH profile management and config generation
+  * Remote command execution across host groups
+  * System auditing and security checks
+  * Certificate and firewall management
+  * Log analysis and backup management

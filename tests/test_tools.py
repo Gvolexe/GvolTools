@@ -39,10 +39,16 @@ def root() -> Path:
     return Path(__file__).parent.parent
 
 
-def find_tool_files(root: Path) -> list[Path]:
+@pytest.fixture
+def tools_dir() -> Path:
+    """Return the tools directory."""
+    return Path(__file__).parent.parent / "tools"
+
+
+def find_tool_files(tools_dir: Path) -> list[Path]:
     """Find all Python tool files."""
     tools = []
-    for setup_file in root.glob("*/setup.json"):
+    for setup_file in tools_dir.glob("*/setup.json"):
         tool_dir = setup_file.parent
         files_dir = tool_dir / "files"
         if files_dir.exists():
@@ -141,9 +147,9 @@ def _test_docstring(path: Path) -> tuple[bool, str]:
         return False, str(e)
 
 
-def test_syntax(root: Path) -> None:
+def test_syntax(tools_dir: Path) -> None:
     """Test Python syntax validity for all tools."""
-    tools = find_tool_files(root)
+    tools = find_tool_files(tools_dir)
     assert len(tools) > 0, "No tools found"
     
     failed = []
@@ -155,9 +161,9 @@ def test_syntax(root: Path) -> None:
     assert len(failed) == 0, f"Syntax errors: {failed}"
 
 
-def test_docstring(root: Path) -> None:
+def test_docstring(tools_dir: Path) -> None:
     """Test that all modules have docstrings."""
-    tools = find_tool_files(root)
+    tools = find_tool_files(tools_dir)
     assert len(tools) > 0, "No tools found"
     
     failed = []
@@ -169,9 +175,9 @@ def test_docstring(root: Path) -> None:
     assert len(failed) == 0, f"Missing docstrings: {failed}"
 
 
-def test_imports(root: Path) -> None:
+def test_imports(tools_dir: Path) -> None:
     """Test that basic imports work."""
-    tools = find_tool_files(root)
+    tools = find_tool_files(tools_dir)
     assert len(tools) > 0, "No tools found"
     
     failed = []
@@ -183,9 +189,9 @@ def test_imports(root: Path) -> None:
     assert len(failed) == 0, f"Import errors: {failed}"
 
 
-def test_version(root: Path) -> None:
+def test_version(tools_dir: Path) -> None:
     """Test that --version works for all tools."""
-    tools = find_tool_files(root)
+    tools = find_tool_files(tools_dir)
     assert len(tools) > 0, "No tools found"
     
     failed = []
@@ -201,9 +207,9 @@ def test_version(root: Path) -> None:
         pytest.skip("gvcore not installed - CLI tests skipped")
 
 
-def test_help(root: Path) -> None:
+def test_help(tools_dir: Path) -> None:
     """Test that --help works for all tools."""
-    tools = find_tool_files(root)
+    tools = find_tool_files(tools_dir)
     assert len(tools) > 0, "No tools found"
     
     failed = []
@@ -218,9 +224,9 @@ def test_help(root: Path) -> None:
         pytest.skip("gvcore not installed - CLI tests skipped")
 
 
-def run_tests(root: Path) -> int:
+def run_tests(tools_dir: Path) -> int:
     """Run all tests."""
-    tools = find_tool_files(root)
+    tools = find_tool_files(tools_dir)
     
     if not tools:
         print(f"{c('Error:', Colors.RED)} No tools found")
@@ -272,6 +278,7 @@ def run_tests(root: Path) -> int:
 
 def main() -> None:
     root = Path(__file__).parent.parent
+    tools_dir = root / "tools"
     
     if len(sys.argv) > 1:
         if sys.argv[1] in ("--help", "-h"):
@@ -279,7 +286,7 @@ def main() -> None:
             print("\nRuns syntax, import, and CLI tests for all tools.")
             sys.exit(0)
     
-    exit_code = run_tests(root)
+    exit_code = run_tests(tools_dir)
     sys.exit(exit_code)
 
 

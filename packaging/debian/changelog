@@ -1,0 +1,9 @@
+gvoltools (1.0.0-1) unstable; urgency=medium
+
+  * Initial release
+  * 21 integrated tools for SSH and system management
+  * Multi-distro support (Debian, Ubuntu, Fedora, Arch, etc.)
+  * Shared gvcore library for consistent functionality
+  * JSON-driven installer with dependency resolution
+
+ -- Gvol <gvol@nexusystems.org>  Tue, 21 Jan 2026 00:00:00 +0000

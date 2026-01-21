@@ -14,7 +14,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 # Add the module path
-sys.path.insert(0, str(Path(__file__).parent.parent / "gvolkeymanager" / "files"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "tools" / "gvolkeymanager" / "files"))
 
 # Import after path is set
 import gvolkeymanager as km

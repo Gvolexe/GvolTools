@@ -1,0 +1,73 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	# Install shared library
+	install -Dm644 tools/gvcore/files/gvcore.py \
+		$(CURDIR)/debian/gvoltools/usr/lib/gvtools/gvcore.py
+	
+	# Install CLI tools
+	for tool_dir in tools/*/; do \
+		tool_name=$$(basename "$$tool_dir"); \
+		[ "$$tool_name" = "gvcore" ] && continue; \
+		main_file="$${tool_dir}files/$${tool_name}.py"; \
+		if [ -f "$$main_file" ]; then \
+			install -Dm755 "$$main_file" \
+				$(CURDIR)/debian/gvoltools/usr/bin/$$tool_name; \
+		fi; \
+	done
+	
+	# Create symlinks for aliases
+	cd $(CURDIR)/debian/gvoltools/usr/bin && \
+		ln -sf gv gvtools && \
+		ln -sf gvfleet fleet && \
+		ln -sf gvfleet gvf && \
+		ln -sf gvfleet f && \
+		ln -sf gvsshprofile sp && \
+		ln -sf gvsshprofile gvsp && \
+		ln -sf gvolkeymanager km && \
+		ln -sf gvolkeymanager gvkm && \
+		ln -sf gvhostbootstrap hb && \
+		ln -sf gvhostbootstrap gvhb && \
+		ln -sf gvsshaudit sshaudit && \
+		ln -sf gvsshaudit gvsa && \
+		ln -sf gvknownhostsctl kh && \
+		ln -sf gvknownhostsctl gvkh && \
+		ln -sf gvsecretsync ss && \
+		ln -sf gvsecretsync gvss && \
+		ln -sf gvcertctl cert && \
+		ln -sf gvcertctl gvcert && \
+		ln -sf gvfirewallctl fw && \
+		ln -sf gvfirewallctl gvfw && \
+		ln -sf gvupdates updates && \
+		ln -sf gvupdates gvup && \
+		ln -sf gvsudoauth gvsudo && \
+		ln -sf gvlogtriage logs && \
+		ln -sf gvlogtriage gvlogs && \
+		ln -sf gvbackupctl backup && \
+		ln -sf gvbackupctl gvbak && \
+		ln -sf gvdnscheck dns && \
+		ln -sf gvdnscheck gvdns && \
+		ln -sf gvnetdiag net && \
+		ln -sf gvnetdiag gvnet && \
+		ln -sf gvportsentry ports && \
+		ln -sf gvportsentry gvports && \
+		ln -sf gvdotctl dots && \
+		ln -sf gvdotctl gvdots && \
+		ln -sf gvgitopsinit gitops && \
+		ln -sf gvgitopsinit gvgit && \
+		ln -sf gvpermcheck perms && \
+		ln -sf gvpermcheck gvperms
+
+override_dh_auto_test:
+	# Run basic syntax tests
+	python3 -m py_compile tools/gvcore/files/gvcore.py
+	for tool_dir in tools/*/; do \
+		tool_name=$$(basename "$$tool_dir"); \
+		main_file="$${tool_dir}files/$${tool_name}.py"; \
+		if [ -f "$$main_file" ]; then \
+			python3 -m py_compile "$$main_file"; \
+		fi; \
+	done
