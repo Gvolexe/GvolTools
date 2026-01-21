@@ -31,7 +31,7 @@ from gvcore import (
     ssh_connect, ssh_exec, confirm,
 )
 
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 
 SECRETS_INDEX = SECRETS_PATH / "index.json"
 SECRETS_KEY_FILE = SECRETS_PATH / ".key"

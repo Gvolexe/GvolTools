@@ -25,7 +25,7 @@ from gvcore import (
     add_common_args, apply_common_args,
 )
 
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 
 
 GITOPS_STRUCTURE = {

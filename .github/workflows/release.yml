@@ -166,12 +166,11 @@ jobs:
           sed -i "s/^pkgver=.*/pkgver=${{ steps.version.outputs.version }}/" PKGBUILD
           sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
 
-      - name: Prepare PKGBUILD-git as PKGBUILD
+      - name: Prepare PKGBUILD for git package
         run: |
-          # The AUR action expects a file named PKGBUILD, so copy PKGBUILD-git
-          cp packaging/aur/PKGBUILD-git packaging/aur/PKGBUILD-git-ready
-          # Rename for the action
-          mv packaging/aur/PKGBUILD-git-ready /tmp/PKGBUILD
+          # The AUR action expects a file named PKGBUILD
+          # Copy PKGBUILD-git to a new location that will be used for gvoltools-git
+          cp packaging/aur/PKGBUILD-git packaging/aur/PKGBUILD-git-deploy
 
       - name: Publish gvoltools to AUR
         uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
@@ -187,7 +186,7 @@ jobs:
         uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
           pkgname: gvoltools-git
-          pkgbuild: /tmp/PKGBUILD
+          pkgbuild: ./packaging/aur/PKGBUILD-git-deploy
           commit_username: Gvol
           commit_email: gvol@nexusystems.org
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
