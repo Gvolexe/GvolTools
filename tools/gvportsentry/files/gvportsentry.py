@@ -27,7 +27,7 @@ from gvcore import (
     ssh_connect, ssh_exec,
 )
 
-__version__ = "1.1.4"
+__version__ = "1.1.5"
 
 BASELINES_DIR = GVTOOLS_CONFIG / "port-baselines"
 

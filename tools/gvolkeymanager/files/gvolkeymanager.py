@@ -25,7 +25,7 @@ try:
 except ImportError:
     paramiko = None
 
-__version__ = "1.1.4"
+__version__ = "1.1.5"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Terminal Colors
