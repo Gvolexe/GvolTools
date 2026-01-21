@@ -25,7 +25,7 @@ from gvcore import (
     ssh_connect, ssh_exec, local_exec,
 )
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 
 def check_port_local(host: str, port: int, timeout: float = 3.0) -> bool:

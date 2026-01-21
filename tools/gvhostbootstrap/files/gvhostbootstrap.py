@@ -31,7 +31,7 @@ from gvcore import (
     ssh_connect, ssh_exec,
 )
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 # Key registry path (compatible with gvolkeymanager)
 KEY_REGISTRY = Path.home() / ".config" / "gvolkeymanager" / "keys.json"
