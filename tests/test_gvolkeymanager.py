@@ -246,8 +246,8 @@ class TestRemoteScripts:
         assert "useradd" in script
         assert "passwd -l" in script  # disable password
         assert "PermitRootLogin no" in script  # disable root
-        assert "pam_ssh_agent_auth" in script  # sudo with key
-        assert "sudo_authorized_keys" in script
+        assert "NOPASSWD" in script  # passwordless sudo
+        assert "sudoers.d" in script  # sudoers drop-in file
     
     def test_secure_user_script_without_security(self):
         script = km.make_secure_user_script(
@@ -261,7 +261,7 @@ class TestRemoteScripts:
         assert "useradd" in script
         assert "passwd -l" not in script
         assert "PermitRootLogin" not in script
-        assert "pam_ssh_agent_auth" not in script
+        assert "NOPASSWD" not in script
 
 
 class TestPreferences:
