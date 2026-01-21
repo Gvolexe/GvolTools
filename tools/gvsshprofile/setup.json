@@ -1,6 +1,6 @@
 {
     "tool": "gvsshprofile",
-    "version": "1.2.7",
+    "version": "1.2.80",
     "description": "SSH connection profiles and config generation",
     "deps": {
         "arch": [],

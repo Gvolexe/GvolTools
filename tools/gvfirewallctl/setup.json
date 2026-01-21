@@ -1,6 +1,6 @@
 {
     "tool": "gvfirewallctl",
-    "version": "1.2.7",
+    "version": "1.2.80",
     "description": "Firewall baseline management (UFW/nftables)",
     "deps": {
         "arch": [],

@@ -6,7 +6,7 @@
 #
 set -euo pipefail
 
-readonly VERSION="1.2.7"
+readonly VERSION="1.2.80"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT_DIR
 TOOLS_DIR="$ROOT_DIR/tools"
